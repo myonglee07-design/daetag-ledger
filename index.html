@@ -909,8 +909,8 @@ function renderHome(c) {
     const dayColor = isSun ? '#ef4444' : isSat ? '#60a5fa' : 'var(--text-secondary)';
     const todayId = isToday ? 'id="todayRow"' : '';
 
-    if (!data) {
-      const showHoliday = isPast;
+    if (!data || (data.income===0 && data.expense===0 && data.net===0)) {
+      const showHoliday = isPast || !!data;
       const dimStyle = isFuture ? 'opacity:0.28;' : '';
       dayRows +=
         '<div class="day-row ' + (isToday?'day-row-today':'') + '" ' + todayId + ' onclick="goToDate(\'' + ds + '\')" style="cursor:pointer;' + dimStyle + '">' +
@@ -1947,6 +1947,7 @@ async function init() {
   showView('main');
 }
 init();
+
 
 
 
