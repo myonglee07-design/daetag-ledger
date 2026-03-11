@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="HandheldFriendly" content="true">
 <meta name="theme-color" content="#0d1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,6 +61,7 @@
   --expense-dim: rgba(220,38,38,0.12);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; }
 #app { height: 100vh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
 
@@ -283,7 +285,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 /* 날짜 행: 3컬럼 그리드 */
 .day-row {
   display: grid;
-  grid-template-columns: 88px 80px 1fr 150px;
+  grid-template-columns: 72px 56px 1fr 130px;
   align-items: center;
   padding: 10px 14px;
   min-height: 58px;
@@ -296,33 +298,33 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* col1: 날짜 */
 .dr-date { display: flex; align-items: center; gap: 5px; }
-.day-num-txt { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.day-name-txt { font-size: 13px; font-weight: 500; }
+.day-num-txt { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.day-name-txt { font-size: 14px; font-weight: 500; }
 .today-pip { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
 
 /* col2: 1건(위) + 근무(아래) */
-.dr-mid { display: flex; flex-direction: column; gap: 4px; padding-left: 16px; align-items: flex-start; justify-content: center; }
+.dr-mid { display: flex; flex-direction: column; gap: 4px; padding-left: 8px; align-items: flex-start; justify-content: center; }
 .dr-mid-top { display: flex; align-items: center; }
 .dr-mid-bot { display: flex; align-items: center; }
-.call-badge { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; }
+.call-badge { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; }
 .work-tag { font-size: 11px; font-weight: 600; color: #34d399; background: rgba(52,211,153,0.12); border-radius: 4px; padding: 2px 6px 2px 4px; margin-left: -4px; }
 .badge-wrap { display: inline-flex; }
 
 /* col3: 순익 가로 한 줄 */
-.dr-net { display: flex; flex-direction: row; align-items: center; gap: 6px; justify-content: flex-start; padding-left: 16px; }
+.dr-net { display: flex; flex-direction: row; align-items: center; gap: 6px; justify-content: flex-start; padding-left: 8px; }
 
 /* col4: 수입+지출 맨오른쪽 */
 .dr-right { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-.call-badge { font-size: 12px; font-weight: 700; color: var(--accent); padding: 0; }
+.call-badge { font-size: 14px; font-weight: 700; color: var(--accent); padding: 0; }
 .work-tag { font-size: 11px; font-weight: 600; color: #34d399; background: rgba(52,211,153,0.12); border-radius: 4px; padding: 2px 6px; margin-left: -1px; }
 .badge-wrap { display: inline-flex; min-width: 42px; }
 .holiday-tag { font-size: 12px; font-weight: 500; color: var(--text-muted); }
 
-.dr-right-row { display: flex; align-items: center; gap: 8px; }
-.row-label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; min-width: 32px; }
+.dr-right-row { display: flex; align-items: center; gap: 4px; }
+.row-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; min-width: 32px; }
 .row-label.expense-color { color: var(--expense); }
 .row-label-muted { font-size: 14px; color: var(--text-muted); white-space: nowrap; }
-.row-income { font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--income); }
+.row-income { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--income); }
 .row-expense { font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--expense); }
 .row-net { font-size: 19px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 
