@@ -554,6 +554,7 @@ let currentDate = new Date();
 let monthlyDate = new Date();
 let editingOrderId = null;
 let selectedPlatform = null;
+let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
 
 let settings = {
   addrAutocomplete: true,
@@ -882,7 +883,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.2.2';
+var APP_VERSION = 'v1.2.3';
 function renderMain(c) {
   c.innerHTML =
   '<div style="padding:16px;height:calc(100% - 32px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;">' +
@@ -1401,12 +1402,11 @@ function setWorkType(val) {
 
 
 function openAddPlatformSheet() {
-  document.getElementById('addPlatformSheet').classList.add('show');
-  document.getElementById('overlay').classList.add('show');
   document.getElementById('newP_name').value='';
   document.getElementById('newP_fee').value='20';
   document.getElementById('newP_delivery').checked=true;
   document.getElementById('newP_transport').checked=false;
+  openSheet('addPlatformSheet'); // openSheet 통해 history.pushState 처리
 }
 async function addPlatform() {
   const name = document.getElementById('newP_name').value.trim();
@@ -1869,10 +1869,16 @@ function editOrder(id) {
 function openSheet(id) {
   document.getElementById('overlay').classList.add('show');
   document.getElementById(id).classList.add('show');
+  // Android 뒤로가기 대응: 시트 열릴 때 history 스택에 push
+  history.pushState({ sheet: id, view: currentView }, '');
 }
 function closeSheet() {
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  // 코드에서 닫을 때: history.back()으로 sheet state 제거
+  // popstate에서 _sheetHistoryPending 감지 후 뷰 전환 없이 패스
+  _sheetHistoryPending = true;
+  history.back();
 }
 
 // ===================== 고정 지출 =====================
@@ -2065,6 +2071,21 @@ async function loadSqlJs(dbBuffer) {
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
+  // [1] 코드에서 closeSheet() 호출로 발생한 history.back() → 뷰 전환 없이 패스
+  if (_sheetHistoryPending) {
+    _sheetHistoryPending = false;
+    return;
+  }
+
+  // [2] Android 뒤로가기: 열린 바텀시트가 있으면 닫기만 하고 종료
+  var openSheetEl = document.querySelector('.bottom-sheet.show');
+  if (openSheetEl) {
+    document.getElementById('overlay').classList.remove('show');
+    document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+    return;
+  }
+
+  // [3] 뷰 전환 로직 (기존)
   const state = e.state;
   if (!state || state.view === 'main') {
     // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
