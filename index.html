@@ -196,6 +196,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item.logi1::before, .order-item.logi2::before { background: var(--logi); }
 .order-item.icon::before, .order-item.icon2::before { background: var(--icon); }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.order-type-badge { font-size: 10px; font-weight: 600; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
 .order-platform { font-size: clamp(10px, 2.8vw, 12px); color: var(--text-secondary); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; }
 .order-route { font-size: clamp(13px, 3.6vw, 15px); color: var(--text-primary); margin-bottom: 8px; }
@@ -227,7 +228,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .date-nav { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
 .date-nav-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display:flex; align-items:center; justify-content:center; }
 .date-nav-btn:active { background: var(--border); }
-.date-nav-title { font-size: 15px; font-weight: 700; min-width: 160px; text-align: center; }
+.date-nav-title { font-size: 15px; font-weight: 700; min-width: 160px; text-align: center; color: var(--text-primary); }
 
 /* 부모 실수입 바 내부 */
 .parent-bar { display: flex; align-items: stretch; background: var(--bg-secondary); }
@@ -357,6 +358,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 [data-fontsize="xs"] .day-name-txt { font-size: 10px; }
 [data-fontsize="xs"] .holiday-tag, [data-fontsize="xs"] .work-tag { font-size: 9px; }
 [data-fontsize="xs"] .call-badge { font-size: 10px; }
+[data-fontsize="xs"] .order-type-badge { font-size: 8px; }
+[data-fontsize="xs"] .date-nav-title { font-size: 12px; }
 [data-fontsize="xs"] .order-time { font-size: 11px; }
 [data-fontsize="xs"] .order-route { font-size: 11px; }
 [data-fontsize="xs"] .order-net { font-size: 12px; }
@@ -382,6 +385,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 [data-fontsize="md"] .day-name-txt { font-size: 14px; }
 [data-fontsize="md"] .holiday-tag, [data-fontsize="md"] .work-tag { font-size: 12px; }
 [data-fontsize="md"] .call-badge { font-size: 14px; }
+[data-fontsize="md"] .order-type-badge { font-size: 12px; }
+[data-fontsize="md"] .date-nav-title { font-size: 17px; }
 [data-fontsize="md"] .order-time { font-size: 15px; }
 [data-fontsize="md"] .order-route { font-size: 16px; }
 [data-fontsize="md"] .order-net { font-size: 17px; }
@@ -405,6 +410,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 [data-fontsize="lg"] .day-name-txt { font-size: 17px; }
 [data-fontsize="lg"] .holiday-tag, [data-fontsize="lg"] .work-tag { font-size: 14px; }
 [data-fontsize="lg"] .call-badge { font-size: 17px; }
+[data-fontsize="lg"] .order-type-badge { font-size: 14px; }
+[data-fontsize="lg"] .date-nav-title { font-size: 20px; }
 [data-fontsize="lg"] .order-time { font-size: 17px; }
 [data-fontsize="lg"] .order-route { font-size: 19px; }
 [data-fontsize="lg"] .order-net { font-size: 20px; }
@@ -1028,7 +1035,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.7.5';
+var APP_VERSION = 'v1.7.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1238,7 +1245,7 @@ function renderJournal(c) {
   const nav =
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
     '<button onclick="changeJournalDate(-1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">&#8249;</button>' +
-    '<span style="font-size:15px;font-weight:700;color:var(--text-primary);">' + dateKo(journalDate) + '</span>' +
+    '<span class="date-nav-title">' + dateKo(journalDate) + '</span>' +
     '<button onclick="changeJournalDate(1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">&#8250;</button>' +
     '</div>';
 
@@ -1680,7 +1687,7 @@ function orderItemHTML(o, editable) {
     '<div class="order-item-header">' +
     '<span class="order-time">' + time + '</span>' +
     '<div style="display:flex;align-items:center;gap:5px;">' +
-    '<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + ((o.orderType||p.type)==='transport'?'rgba(20,184,166,0.15)':'rgba(212,168,83,0.15)') + ';color:' + ((o.orderType||p.type)==='transport'?'var(--logi)':'var(--accent)') + ';">' + ((o.orderType||p.type)==='transport'?'탁송':'대리') + '</span>' +
+    '<span class="order-type-badge" style="padding:2px 6px;border-radius:4px;background:' + ((o.orderType||p.type)==='transport'?'rgba(20,184,166,0.15)':'rgba(212,168,83,0.15)') + ';color:' + ((o.orderType||p.type)==='transport'?'var(--logi)':'var(--accent)') + ';">' + ((o.orderType||p.type)==='transport'?'탁송':'대리') + '</span>' +
     '<span class="order-platform">' + (p.name||o.platform) + '</span>' +
     '</div>' +
     '</div>' +
