@@ -1028,7 +1028,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.7.4';
+var APP_VERSION = 'v1.7.5';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2183,16 +2183,16 @@ async function submitOrder() {
   if (obj.startAddr) await saveAddrHistory(obj.startAddr);
   if (obj.endAddr) await saveAddrHistory(obj.endAddr);
   for (const v of (obj.visitAddrs||[])) await saveAddrHistory(v);
-  render();
-  updateParentBar();
+  // closeSheet() 먼저 (history.back() popstate 처리) → 이후 render
   closeSheet();
+  setTimeout(function() { render(); updateParentBar(); }, 320);
 }
 async function deleteOrder(id) {
   if (!confirm('이 오더를 삭제할까요?')) return;
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
-  render();
-  updateParentBar();
+  closeSheet();
+  setTimeout(function() { render(); updateParentBar(); }, 320);
   closeSheet();
   showToast('삭제되었습니다');
 }
