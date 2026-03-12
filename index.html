@@ -947,7 +947,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.5.1';
+var APP_VERSION = 'v1.5.2';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1766,7 +1766,6 @@ function openOrderForm(pid, orderId) {
     // 수정 모드
     _otype = (journalType === 'transport') ? 'transport' : 'delivery';
   }
-  console.log('[오더폼] pid='+pid+', selectTab='+platformSelectTab+', jType='+journalType+', p.types='+JSON.stringify(p.types)+', result='+_otype);
   var _togDiv = document.getElementById('orderTypeToggle');
   if (_togDiv) {
     var _dStyle = _otype === 'delivery'
@@ -2013,16 +2012,18 @@ async function submitOrder() {
   if (obj.startAddr) await saveAddrHistory(obj.startAddr);
   if (obj.endAddr) await saveAddrHistory(obj.endAddr);
   for (const v of (obj.visitAddrs||[])) await saveAddrHistory(v);
-  closeSheet();
   render();
+  updateParentBar();
+  closeSheet();
 }
 async function deleteOrder(id) {
   if (!confirm('이 오더를 삭제할까요?')) return;
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
+  render();
+  updateParentBar();
   closeSheet();
   showToast('삭제되었습니다');
-  render();
 }
 function editOrder(id) {
   const o = orders.find(x=>x.id===id);
