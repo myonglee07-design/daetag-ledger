@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="HandheldFriendly" content="true">
 <meta name="theme-color" content="#0d1117">
 <meta name="mobile-web-app-capable" content="yes">
@@ -69,7 +69,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .header {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
-  padding: 14px 16px 10px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 10px;
   display: flex; align-items: center; justify-content: space-between;
   position: relative; z-index: 10;
   flex-shrink: 0;
@@ -1035,7 +1035,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.7.6';
+var APP_VERSION = 'v1.7.7';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2468,6 +2468,27 @@ async function init() {
   showView('main');
 }
 init();
+
+// 안드로이드 하드웨어 뒤로가기 버튼 처리 (Capacitor APK 전용)
+document.addEventListener('backbutton', function(e) {
+  e.preventDefault();
+  // 바텀시트 열려있으면 닫기
+  var openSheetEl = document.querySelector('.bottom-sheet.show');
+  if (openSheetEl) {
+    document.getElementById('overlay').classList.remove('show');
+    document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+    return;
+  }
+  // 메인화면에서 뒤로가기 → 앱 종료
+  if (currentView === 'main') {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+    return;
+  }
+  // 그 외 → 앱 내 뒤로가기
+  goBack();
+}, false);
 
 
 
