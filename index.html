@@ -11,7 +11,7 @@
 <title>대탁 가계부</title>
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root {
@@ -62,7 +62,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-size: clamp(14px, 3.8vw, 17px); }
-html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; }
+html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR',sans-serif; overflow: hidden; }
 #app { height: 100vh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
 
 /* 상단 헤더 */
@@ -74,7 +74,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   position: relative; z-index: 10;
   flex-shrink: 0;
 }
-.header-title { font-size: clamp(14px, 4vw, 16px); font-weight: 700; color: var(--text-primary); text-align:center; }
+.header-title { font-size: clamp(15px, 4.2vw, 17px); font-weight: 700; color: var(--text-primary); text-align:center; font-family: 'Noto Sans KR',sans-serif; }
 .header-subtitle { font-size: clamp(10px, 2.8vw, 11px); color: var(--text-secondary); margin-top: 1px; text-align:center; }
 .header-center {
   position: absolute;
@@ -82,6 +82,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   transform: translateX(-50%);
   text-align: center;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 /* 스크롤 영역 */
@@ -121,11 +122,11 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .accent-color { color: var(--accent); }
 
 /* 버튼 */
-.btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: clamp(14px, 3.8vw, 15px); font-weight: 600; cursor: pointer; width: 100%; font-family: 'Noto Sans KR', sans-serif; }
+.btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: clamp(14px, 3.8vw, 15px); font-weight: 600; cursor: pointer; width: 100%; font-family: 'Noto Sans KR',sans-serif; }
 .btn-primary:active { background: var(--accent-hover); transform: scale(0.98); }
-.btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 20px; font-size: clamp(13px, 3.5vw, 14px); font-weight: 500; cursor: pointer; width: 100%; font-family: 'Noto Sans KR', sans-serif; }
+.btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 20px; font-size: clamp(13px, 3.5vw, 14px); font-weight: 500; cursor: pointer; width: 100%; font-family: 'Noto Sans KR',sans-serif; }
 .btn-secondary:active { background: #333; }
-.btn-danger { background: var(--expense-dim); color: var(--expense); border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
+.btn-danger { background: var(--expense-dim); color: var(--expense); border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; cursor: pointer; font-family: 'Noto Sans KR',sans-serif; }
 .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; color: var(--text-secondary); display:flex; align-items:center; }
 .btn-icon:active { background: var(--bg-input); }
 .header-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--text-secondary); white-space: nowrap; }
@@ -140,7 +141,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .form-input {
   width: 100%; background: var(--bg-input); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text-primary);
-  font-size: clamp(14px, 3.8vw, 16px); font-family: 'Noto Sans KR', sans-serif; outline: none;
+  font-size: clamp(14px, 3.8vw, 16px); font-family: 'Noto Sans KR',sans-serif; outline: none;
 }
 .form-input:focus { border-color: var(--accent); }
 .form-input::placeholder { color: var(--text-muted); }
@@ -256,7 +257,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 /* 교통비 다중 */
 .transport-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
 .transport-item .form-input { flex: 1; }
-.transport-type-sel { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; color: var(--text-primary); font-size: 14px; font-family: 'Noto Sans KR', sans-serif; outline: none; min-width: 90px; }
+.transport-type-sel { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; color: var(--text-primary); font-size: 14px; font-family: 'Noto Sans KR',sans-serif; outline: none; min-width: 90px; }
 
 /* 정산 계산 박스 */
 .calc-box { background: var(--bg-primary); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 14px; margin-top: 16px; }
@@ -280,7 +281,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* 홈 월 헤더 - sticky */
 .home-month-header { position: sticky; top: 0; z-index: 10; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
-.home-month-title { font-size: clamp(14px, 4vw, 16px); font-weight: 700; min-width: 120px; text-align: center; }
+.home-month-title { font-size: clamp(15px, 4.2vw, 17px); font-weight: 700; min-width: 120px; text-align: center; font-family: 'Noto Sans KR',sans-serif; }
 .home-month-nav { display: flex; gap: 6px; }
 .home-month-nav-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
 
@@ -349,6 +350,80 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
 .empty-icon { font-size: 40px; margin-bottom: 12px; }
 .empty-text { font-size: 14px; }
+
+/* ── 글씨 크기 단계별 재정의 ── */
+/* xs */
+[data-fontsize="xs"] .day-num-txt { font-size: 12px; }
+[data-fontsize="xs"] .day-name-txt { font-size: 10px; }
+[data-fontsize="xs"] .holiday-tag, [data-fontsize="xs"] .work-tag { font-size: 9px; }
+[data-fontsize="xs"] .call-badge { font-size: 10px; }
+[data-fontsize="xs"] .order-time { font-size: 11px; }
+[data-fontsize="xs"] .order-route { font-size: 11px; }
+[data-fontsize="xs"] .order-net { font-size: 12px; }
+[data-fontsize="xs"] .order-detail { font-size: 10px; }
+[data-fontsize="xs"] .order-platform { font-size: 9px; }
+[data-fontsize="xs"] .parent-bar-label { font-size: 10px; }
+[data-fontsize="xs"] .parent-bar-val { font-size: 12px; }
+[data-fontsize="xs"] .form-label { font-size: 10px; }
+[data-fontsize="xs"] .form-input { font-size: 12px; }
+[data-fontsize="xs"] .btn-primary, [data-fontsize="xs"] .btn-secondary { font-size: 12px; }
+[data-fontsize="xs"] .sheet-title { font-size: 13px; }
+[data-fontsize="xs"] .section-label { font-size: 9px; }
+[data-fontsize="xs"] .header-title { font-size: 13px; }
+[data-fontsize="xs"] .home-month-title { font-size: 12px; }
+[data-fontsize="xs"] .row-net { font-size: 12px; }
+[data-fontsize="xs"] .row-income, [data-fontsize="xs"] .row-expense { font-size: 10px; }
+[data-fontsize="xs"] .dr-info-label { font-size: 9px; }
+
+/* sm (기본, 재정의 불필요 — 현재값 유지) */
+
+/* md */
+[data-fontsize="md"] .day-num-txt { font-size: 18px; }
+[data-fontsize="md"] .day-name-txt { font-size: 14px; }
+[data-fontsize="md"] .holiday-tag, [data-fontsize="md"] .work-tag { font-size: 12px; }
+[data-fontsize="md"] .call-badge { font-size: 14px; }
+[data-fontsize="md"] .order-time { font-size: 15px; }
+[data-fontsize="md"] .order-route { font-size: 16px; }
+[data-fontsize="md"] .order-net { font-size: 17px; }
+[data-fontsize="md"] .order-detail { font-size: 13px; }
+[data-fontsize="md"] .order-platform { font-size: 12px; }
+[data-fontsize="md"] .parent-bar-label { font-size: 14px; }
+[data-fontsize="md"] .parent-bar-val { font-size: 18px; }
+[data-fontsize="md"] .form-label { font-size: 13px; }
+[data-fontsize="md"] .form-input { font-size: 16px; }
+[data-fontsize="md"] .btn-primary, [data-fontsize="md"] .btn-secondary { font-size: 15px; }
+[data-fontsize="md"] .sheet-title { font-size: 17px; }
+[data-fontsize="md"] .section-label { font-size: 12px; }
+[data-fontsize="md"] .header-title { font-size: 17px; }
+[data-fontsize="md"] .home-month-title { font-size: 17px; }
+[data-fontsize="md"] .row-net { font-size: 18px; }
+[data-fontsize="md"] .row-income, [data-fontsize="md"] .row-expense { font-size: 14px; }
+[data-fontsize="md"] .dr-info-label { font-size: 12px; }
+
+/* lg */
+[data-fontsize="lg"] .day-num-txt { font-size: 22px; }
+[data-fontsize="lg"] .day-name-txt { font-size: 17px; }
+[data-fontsize="lg"] .holiday-tag, [data-fontsize="lg"] .work-tag { font-size: 14px; }
+[data-fontsize="lg"] .call-badge { font-size: 17px; }
+[data-fontsize="lg"] .order-time { font-size: 17px; }
+[data-fontsize="lg"] .order-route { font-size: 19px; }
+[data-fontsize="lg"] .order-net { font-size: 20px; }
+[data-fontsize="lg"] .order-detail { font-size: 15px; }
+[data-fontsize="lg"] .order-platform { font-size: 14px; }
+[data-fontsize="lg"] .parent-bar-label { font-size: 16px; }
+[data-fontsize="lg"] .parent-bar-val { font-size: 22px; }
+[data-fontsize="lg"] .form-label { font-size: 15px; }
+[data-fontsize="lg"] .form-input { font-size: 18px; }
+[data-fontsize="lg"] .btn-primary, [data-fontsize="lg"] .btn-secondary { font-size: 17px; }
+[data-fontsize="lg"] .sheet-title { font-size: 20px; }
+[data-fontsize="lg"] .section-label { font-size: 14px; }
+[data-fontsize="lg"] .header-title { font-size: 20px; }
+[data-fontsize="lg"] .home-month-title { font-size: 20px; }
+[data-fontsize="lg"] .row-net { font-size: 22px; }
+[data-fontsize="lg"] .row-income, [data-fontsize="lg"] .row-expense { font-size: 17px; }
+[data-fontsize="lg"] .dr-info-label { font-size: 14px; }
+[data-fontsize="lg"] .day-row { min-height: 72px; }
+[data-fontsize="lg"] .order-item { padding: 14px; }
 </style>
 </head>
 <body>
@@ -358,7 +433,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   <div class="toast" id="toast"></div>
 
   <!-- 헤더 -->
-  <div class="header">
+  <div class="header" style="position:relative;">
     <div id="headerLeft" style="display:flex;align-items:center;min-width:40px;">
       <!-- 뒤로가기 -->
       <button id="btnBack" style="display:none;background:none;border:none;cursor:pointer;padding:4px 8px 4px 0;align-items:center;" onclick="goBack()">
@@ -371,16 +446,12 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
       <div id="headerSub" style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;justify-content:center;">대리운전 · 로드탁송 특화 가계부<span id="headerVersion" style="color:var(--text-muted);opacity:0.6;"></span></div>
     </div>
     <!-- 오른쪽 버튼 -->
-    <div style="display:flex;gap:6px;align-items:center;min-width:40px;justify-content:flex-end;flex-shrink:0;">
+    <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-shrink:0;">
       <button id="btnTheme" class="theme-btn" onclick="toggleTheme()" title="밝게/어둡게" style="display:flex!important;">
         <svg id="themeIconSun" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         <svg id="themeIconMoon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
       </button>
-      <button class="header-btn" id="btnStats" style="display:none;" onclick="showView('monthly')">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <span style="font-size:11px;">결산</span>
-      </button>
-      <button class="header-btn" id="btnSettings" onclick="showView('settings')">
+      <button class="header-btn" id="btnSettings" onclick="openSettings()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
@@ -558,6 +629,7 @@ function P(id) {
 let orders = [];
 let addrHistory = [];
 let journalType = 'delivery';
+let settingsFrom = 'main'; // 설정 진입 전 뷰
 let journalDate = new Date();
 let currentDate = new Date();
 let monthlyDate = new Date();
@@ -569,6 +641,7 @@ let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무�
 let settings = {
   addrAutocomplete: true,
   workType: null,
+  fontSize: 'sm',
   kakaoAffiliateFee: 800,
   fixedExpenses: [
     { id:'daegu_monthly', name:'대구시민 사용료',         amount:15000, locked:true,  active:true  },
@@ -630,6 +703,7 @@ async function loadData() {
     if (s.key === 'addrAutocomplete') settings.addrAutocomplete = s.value;
     if (s.key === 'workType') settings.workType = s.value;
     if (s.key === 'kakaoAffiliateFee') settings.kakaoAffiliateFee = s.value;
+    if (s.key === 'fontSize') settings.fontSize = s.value;
     if (s.key === 'platformList') {
       let loaded = s.value.map(p => {
         if (!p.types) p.types = [p.type || 'delivery'];
@@ -661,6 +735,7 @@ async function saveSettings() {
   await dbPut('settings', { key:'workType', value: settings.workType });
   await dbPut('settings', { key:'platformList', value: platformList });
   await dbPut('settings', { key:'kakaoAffiliateFee', value: settings.kakaoAffiliateFee });
+  await dbPut('settings', { key:'fontSize', value: settings.fontSize });
   rebuildPlatforms();
 }
 
@@ -817,6 +892,11 @@ function updateThemeIcon(theme) {
 }
 
 
+function openSettings() {
+  settingsFrom = currentView;
+  showView('settings');
+}
+
 function showView(v, skipHistory) {
   currentView = v;
 
@@ -833,7 +913,7 @@ function showView(v, skipHistory) {
   btnBack.style.display = (v === 'main' || v === 'onboarding') ? 'none' : 'flex';
 
   const btnSettings = document.getElementById('btnSettings');
-  if (btnSettings) btnSettings.style.display = v === 'main' ? 'flex' : 'none';
+  if (btnSettings) btnSettings.style.display = (v === 'settings' || v === 'backup') ? 'none' : 'flex';
 
   const fab = document.getElementById('fabBtn');
   fab.style.display = (v === 'home' || v === 'journal') ? 'flex' : 'none';
@@ -850,7 +930,12 @@ function showView(v, skipHistory) {
   render();
 }
 function goBack() {
-  if (currentView === 'journal') {
+  if (currentView === 'settings') {
+    var back = settingsFrom || 'main';
+    if (back === 'journal') { showView('journal'); }
+    else if (back === 'home' || back === 'monthly') { showView(back); }
+    else { showView('main'); }
+  } else if (currentView === 'journal') {
     homeMonth = new Date(journalDate.getFullYear(), journalDate.getMonth(), 1);
     showView('home');
   } else {
@@ -860,29 +945,23 @@ function goBack() {
 function updateHeader() {
   const sub = document.getElementById('headerSub');
   const title = document.getElementById('headerTitle');
-  const btnStats = document.getElementById('btnStats');
+  
   if (currentView === 'main') {
     title.innerHTML = '대탁 <span class="header-accent">가계부</span>';
     sub.style.display = 'block'; sub.innerHTML = '대리운전 · 로드탁송 특화 가계부&nbsp;<span style="opacity:0.5;">' + APP_VERSION + '</span>';
-    if (btnStats) btnStats.style.display = 'none';
   } else if (currentView === 'home') {
     title.innerHTML = '🚕 <span class="header-accent">드라이버 가계부</span>';
     sub.style.display = 'none';
-    if (btnStats) btnStats.style.display = 'flex';
   } else if (currentView === 'journal') {
     title.innerHTML = '<span class="header-accent">' + dateKo(journalDate) + '</span>';
     sub.style.display = 'none';
-    if (btnStats) btnStats.style.display = 'none';
   } else if (currentView === 'monthly') {
     title.innerHTML = '결산 <span class="header-accent">' + monthKo(monthlyDate) + '</span>';
     sub.style.display = 'none';
-    if (btnStats) btnStats.style.display = 'none';
   } else if (currentView === 'settings') {
     title.innerHTML = '⚙️ 설정'; sub.style.display = 'none';
-    if (btnStats) btnStats.style.display = 'none';
   } else if (currentView === 'backup') {
     title.innerHTML = '💾 백업'; sub.style.display = 'none';
-    if (btnStats) btnStats.style.display = 'none';
   }
 }
 
@@ -949,32 +1028,36 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.5.6';
+var APP_VERSION = 'v1.7.3';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
+  const _svgJournal = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="54" height="54"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h5"/></svg>';
+  const _svgMonthly = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="42" height="42"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path stroke-linecap="round" d="M3 9h18M8 3v2M16 3v2"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 14l2.5 2.5L16 11"/></svg>';
+  const _svgBackup  = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="42" height="42"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-3.5-3.5M12 15l3.5-3.5"/><path stroke-linecap="round" d="M5 18v1a2 2 0 002 2h10a2 2 0 002-2v-1"/></svg>';
+  const _fs = "'Noto Sans KR',sans-serif";
   c.innerHTML =
   '<div style="padding:16px 16px 8px;height:calc(100% - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
-    '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;">' +
-      '<div style="font-size:clamp(40px,12vw,56px);line-height:1;">🚗🚚</div>' +
+    '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;">' +
+      _svgJournal +
       '<div style="text-align:center;">' +
-        '<div style="font-size:clamp(18px,5vw,22px);font-weight:700;color:var(--text-primary);">대탁일지</div>' +
-        '<div style="font-size:clamp(10px,2.8vw,12px);color:var(--text-muted);margin-top:4px;">대리운전 · 로드탁송 날짜별 기록</div>' +
+        '<div style="font-size:clamp(18px,5vw,22px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">대탁일지</div>' +
+        '<div style="font-size:clamp(10px,2.8vw,12px);color:var(--text-muted);margin-top:5px;font-weight:400;font-family:' + _fs + ';">대리운전 · 로드탁송 날짜별 기록</div>' +
       '</div>' +
     '</button>' +
     '<div style="flex:0 0 170px;display:flex;gap:12px;">' +
       '<button onclick="showView(\'monthly\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
-        '<div style="font-size:clamp(32px,9vw,44px);line-height:1;">📊</div>' +
+        _svgMonthly +
         '<div style="text-align:center;">' +
-          '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);">결산</div>' +
-          '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--text-muted);margin-top:3px;">월별 수익</div>' +
+          '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">결산</div>' +
+          '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--text-muted);margin-top:3px;font-family:' + _fs + ';">월별 수익</div>' +
         '</div>' +
       '</button>' +
       '<button onclick="showView(\'backup\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
-        '<div style="font-size:clamp(32px,9vw,44px);line-height:1;">💾</div>' +
+        _svgBackup +
         '<div style="text-align:center;">' +
-          '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);">백업</div>' +
-          '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--text-muted);margin-top:3px;">데이터 저장</div>' +
+          '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">백업</div>' +
+          '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--text-muted);margin-top:3px;font-family:' + _fs + ';">데이터 저장</div>' +
         '</div>' +
       '</button>' +
     '</div>' +
@@ -1080,11 +1163,24 @@ function renderHome(c) {
     }
   }
 
+  // 년도 이동 가능 여부: DB에 해당 연도 데이터 있는지 확인
+  const allYears = Array.from(new Set(orders.map(function(o){ return o.date ? parseInt(o.date.slice(0,4)) : null; }).filter(Boolean)));
+  const hasPrevYear = allYears.some(function(y){ return y < year; });
+  const hasNextYear = allYears.some(function(y){ return y > year; });
+  const yearBtnStyle = 'background:var(--bg-input);border:1px solid var(--border);width:26px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;line-height:1;';
+  const prevYearStyle = yearBtnStyle + (hasPrevYear ? 'color:var(--text-primary);' : 'color:var(--text-muted);opacity:0.35;pointer-events:none;');
+  const nextYearStyle = yearBtnStyle + (hasNextYear ? 'color:var(--text-primary);' : 'color:var(--text-muted);opacity:0.35;pointer-events:none;');
+
   const nav =
-    '<div class="home-month-header">' +
+    '<div class="home-month-header" style="display:flex;align-items:center;justify-content:center;padding:8px 10px;gap:5px;position:relative;">' +
+    '<button style="' + prevYearStyle + '" onclick="changeHomeYear(-1)">&laquo;</button>' +
+    '<span style="width:4px;"></span>' +
     '<button class="home-month-nav-btn" onclick="changeHomeMonth(-1)">&lsaquo;</button>' +
-    '<span class="home-month-title">' + year + '년 ' + (month+1) + '월</span>' +
+    '<span class="home-month-title" style="margin:0 6px;">' + year + '년 ' + (month+1) + '월</span>' +
     '<button class="home-month-nav-btn" onclick="changeHomeMonth(1)">&rsaquo;</button>' +
+    '<span style="width:4px;"></span>' +
+    '<button style="' + nextYearStyle + '" onclick="changeHomeYear(1)">&raquo;</button>' +
+    '<button onclick="goToToday()" style="position:absolute;right:10px;background:var(--accent);border:none;color:#fff;height:28px;padding:0 10px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;">오늘</button>' +
     '</div>';
 
   c.innerHTML =
@@ -1108,6 +1204,21 @@ function renderHome(c) {
 
 function changeHomeMonth(d) {
   homeMonth = new Date(homeMonth.getFullYear(), homeMonth.getMonth()+d, 1);
+  updateParentBar();
+  render();
+}
+function goToToday() {
+  homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  updateParentBar();
+  render();
+  setTimeout(function() {
+    var el = document.getElementById('todayRow');
+    var sc = document.getElementById('dayScrollArea');
+    if (el && sc) sc.scrollTop = el.offsetTop - sc.clientHeight/2 + el.offsetHeight/2;
+  }, 50);
+}
+function changeHomeYear(d) {
+  homeMonth = new Date(homeMonth.getFullYear()+d, homeMonth.getMonth(), 1);
   updateParentBar();
   render();
 }
@@ -1332,11 +1443,45 @@ function renderBackup(c) {
 }
 
 // --- 설정 ---
+function setFontSize(size) {
+  settings.fontSize = size;
+  applyFontSize(size);
+  saveSettings();
+  render();
+}
+
 function renderSettings(c) {
   const wt = settings.workType || 'both';
   const wtLabel = wt==='delivery'?'🚗 대리운전만':wt==='transport'?'🚚 로드탁송만':'🚗🚚 대리 + 탁송';
   c.innerHTML = `
   <div style="padding-bottom:40px;">
+
+  ${(function(){
+    var _fs = settings.fontSize||'sm';
+    var _sizes = [
+      {k:'xs', fz:'13px', label:'작게'},
+      {k:'sm', fz:'16px', label:'보통'},
+      {k:'md', fz:'20px', label:'크게'},
+      {k:'lg', fz:'25px', label:'아주크게'}
+    ];
+    var btns = _sizes.map(function(s){
+      var act = _fs === s.k;
+      var bc = act ? 'var(--accent)' : 'var(--border)';
+      var bg = act ? 'var(--accent-dim)' : 'var(--bg-input)';
+      var fc = act ? 'var(--accent)' : 'var(--text-primary)';
+      var lc = act ? 'var(--accent)' : 'var(--text-muted)';
+      return '<button onclick="setFontSize(\'' + s.k + '\')" style="padding:10px 4px;border-radius:10px;border:2px solid '+bc+';background:'+bg+';cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;">'
+        + '<span style="font-size:'+s.fz+';font-weight:700;color:'+fc+';">가</span>'
+        + '<span style="font-size:10px;color:'+lc+';">'+s.label+'</span>'
+        + '</button>';
+    }).join('');
+    return '<div class="section-label">글씨 크기</div>'
+      + '<div style="margin:0 16px 4px;">'
+      + '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">'
+      + btns
+      + '</div></div></div>';
+  })()}
 
   <div class="section-label">업종 설정</div>
   <div style="margin:0 16px 4px;">
@@ -1625,6 +1770,22 @@ function setOrderType(type) {
   const btnD = document.getElementById('orderTypeDelivery');
   const btnT = document.getElementById('orderTypeTransport');
   if (!btnD) return;
+
+  // 추가 모드에서 다른 탭 누르면 해당 타입 플랫폼 선택창으로 이동
+  if (editingOrderId === null) {
+    var curType = document.getElementById('orderSheetTitle').dataset.orderType || 'delivery';
+    if (curType !== type) {
+      // 현재 오더폼 닫고 해당 타입 플랫폼 선택으로
+      closeSheet();
+      setTimeout(function() {
+        platformSelectTab = type;
+        journalType = type;
+        showPlatformSelect();
+      }, 220);
+      return;
+    }
+  }
+
   if (type === 'delivery') {
     btnD.style.background = 'var(--accent)'; btnD.style.borderColor = 'var(--accent)'; btnD.style.color = '#fff';
     btnT.style.background = 'transparent'; btnT.style.borderColor = 'var(--border)'; btnT.style.color = 'var(--text-muted)';
@@ -2284,10 +2445,19 @@ window.addEventListener('popstate', function(e) {
   }
 });
 
+function applyFontSize(size) {
+  // html 루트 font-size (rem 기반 요소용)
+  const rootMap = { xs: '12px', sm: '14px', md: '16px', lg: '19px' };
+  document.documentElement.style.fontSize = rootMap[size] || '14px';
+  // data-fontsize 속성으로 CSS 선택자 트리거
+  document.documentElement.setAttribute('data-fontsize', size || 'sm');
+}
+
 async function init() {
   initTheme();
   await initDB();
   await loadData();
+  applyFontSize(settings.fontSize || 'sm');
   showView('main');
 }
 init();
