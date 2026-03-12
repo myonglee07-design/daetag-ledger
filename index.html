@@ -285,21 +285,23 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .home-month-nav-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
 
 /* 일수별 리스트 */
-.day-list { margin: 0 0 12px; background: var(--bg-card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); overflow: hidden; }
+.day-list { margin: 0 8px 12px; display: flex; flex-direction: column; gap: 6px; background: transparent; }
 
-/* 날짜 행: 그리드 레이아웃 */
+/* 날짜 행: 카드형 사각박스 */
 .day-row {
   display: flex;
   align-items: center;
-  padding: 10px 10px;
-  min-height: 58px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  transition: background 0.12s;
+  padding: 10px 12px;
+  min-height: 62px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: background 0.12s, box-shadow 0.12s;
   gap: 0;
 }
-.day-row:last-child { border-bottom: none; }
-.day-row:active { background: rgba(255,255,255,0.05); }
-.day-row-today { background: rgba(249,115,22,0.12) !important; }
+.day-row:active { box-shadow: 0 0px 2px rgba(0,0,0,0.08); background: var(--bg-secondary); }
+.day-row-today { border-color: var(--accent) !important; background: var(--accent-dim) !important; box-shadow: 0 2px 8px rgba(230,126,0,0.15) !important; }
 
 /* col1: 날짜 */
 .dr-date { display: flex; align-items: center; gap: 3px; white-space: nowrap; width: 72px; flex-shrink: 0; }
@@ -947,7 +949,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.5.4';
+var APP_VERSION = 'v1.5.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1533,7 +1535,7 @@ function orderItemHTML(o, editable) {
     '<div class="order-item-header">' +
     '<span class="order-time">' + time + '</span>' +
     '<div style="display:flex;align-items:center;gap:5px;">' +
-    '<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + (p.type==='transport'?'rgba(20,184,166,0.15)':'rgba(212,168,83,0.15)') + ';color:' + (p.type==='transport'?'var(--logi)':'var(--accent)') + ';">' + (p.type==='transport'?'탁송':'대리') + '</span>' +
+    '<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + ((o.orderType||p.type)==='transport'?'rgba(20,184,166,0.15)':'rgba(212,168,83,0.15)') + ';color:' + ((o.orderType||p.type)==='transport'?'var(--logi)':'var(--accent)') + ';">' + ((o.orderType||p.type)==='transport'?'탁송':'대리') + '</span>' +
     '<span class="order-platform">' + (p.name||o.platform) + '</span>' +
     '</div>' +
     '</div>' +
@@ -1770,8 +1772,8 @@ function openOrderForm(pid, orderId) {
     // 추가 모드: platformSelectTab이 가장 정확 (사용자가 탁송탭에서 클릭 → transport)
     _otype = (platformSelectTab === 'transport') ? 'transport' : 'delivery';
   } else {
-    // 수정 모드
-    _otype = (journalType === 'transport') ? 'transport' : 'delivery';
+    // 수정 모드: 저장된 orderType 우선, 없으면 플랫폼 type
+    _otype = (o.orderType || p.type || 'delivery') === 'transport' ? 'transport' : 'delivery';
   }
   var _togDiv = document.getElementById('orderTypeToggle');
   if (_togDiv) {
@@ -2001,6 +2003,7 @@ async function submitOrder() {
     toll,
     transports: getFormTransports(),
     remark: (document.getElementById('f_remark')||{}).value||'',
+    orderType: (document.getElementById('orderSheetTitle')||{}).dataset&&document.getElementById('orderSheetTitle').dataset.orderType || (PLATFORMS[pid]&&PLATFORMS[pid].type) || 'delivery',
   };
 
   if (editingOrderId) {
