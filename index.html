@@ -43,21 +43,21 @@
 
 /* 화이트 테마 */
 [data-theme="white"] {
-  --bg-primary: #f5f5f0;
-  --bg-secondary: #ebebE4;
+  --bg-primary: #f4f6f9;
+  --bg-secondary: #e8ecf2;
   --bg-card: #ffffff;
-  --bg-input: #f0f0ea;
-  --border: #d8d4c8;
-  --border-active: #d4a853;
-  --text-primary: #1a1408;
-  --text-secondary: #5a4e38;
-  --text-muted: #9a8a6a;
-  --accent: #d4a853;
-  --accent-dim: rgba(212,168,83,0.15);
-  --accent-hover: #b8902e;
-  --income: #475569;
+  --bg-input: #eef0f5;
+  --border: #d0d6e0;
+  --border-active: #e67e00;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --accent: #e67e00;
+  --accent-dim: rgba(230,126,0,0.12);
+  --accent-hover: #c96e00;
+  --income: #0ea5e9;
   --expense: #dc2626;
-  --income-dim: rgba(71,85,105,0.10);
+  --income-dim: rgba(14,165,233,0.10);
   --expense-dim: rgba(220,38,38,0.12);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -947,7 +947,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.5.2';
+var APP_VERSION = 'v1.5.4';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1266,10 +1266,17 @@ function renderStats(c) {
   }
   const maxVal = Math.max.apply(null, months.map(x=>Math.abs(x.net)).concat([1]));
 
+  // DB에 있는 연도 목록 자동 추출
+  const allYears = Array.from(new Set(orders.map(function(o){ return o.date ? parseInt(o.date.slice(0,4)) : null; }).filter(Boolean))).sort();
+  if (allYears.length === 0) allYears.push(new Date().getFullYear());
+  if (allYears.indexOf(statsYear) === -1) statsYear = allYears[allYears.length-1];
+  const yearOptions = allYears.map(function(y){
+    return '<option value="'+y+'"'+(y===statsYear?' selected':'')+'>'+y+'년</option>';
+  }).join('');
   const nav =
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
     '<button onclick="changeStatsYear(-1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">‹</button>' +
-    '<span style="font-size:15px;font-weight:700;color:var(--text-primary);">' + statsYear + '년 통계</span>' +
+    '<select onchange="statsYear=parseInt(this.value);render()" style="font-size:15px;font-weight:700;color:var(--text-primary);background:transparent;border:none;outline:none;text-align:center;cursor:pointer;">' + yearOptions + '</select>' +
     '<button onclick="changeStatsYear(1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">›</button>' +
     '</div>';
 
