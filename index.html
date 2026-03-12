@@ -775,8 +775,17 @@ function updateThemeIcon(theme) {
 }
 
 
-function showView(v) {
+function showView(v, skipHistory) {
   currentView = v;
+
+  // Android 뒤로가기용 history 스택 관리
+  if (!skipHistory) {
+    if (v === 'main') {
+      history.replaceState({ view: 'main' }, '');
+    } else {
+      history.pushState({ view: v }, '');
+    }
+  }
 
   const btnBack = document.getElementById('btnBack');
   btnBack.style.display = (v === 'main' || v === 'onboarding') ? 'none' : 'flex';
@@ -873,7 +882,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.2.0';
+var APP_VERSION = 'v1.2.2';
 function renderMain(c) {
   c.innerHTML =
   '<div style="padding:16px;height:calc(100% - 32px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;">' +
@@ -2054,6 +2063,29 @@ async function loadSqlJs(dbBuffer) {
 }
 
 // ===================== 초기화 =====================
+// Android 뒤로가기 핸들러
+window.addEventListener('popstate', function(e) {
+  const state = e.state;
+  if (!state || state.view === 'main') {
+    // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
+    if (currentView !== 'main') {
+      showView('main', true);
+      history.replaceState({ view: 'main' }, '');
+    }
+    // currentView가 이미 main이면 브라우저 기본 동작(앱 종료)
+  } else {
+    // journal → home, 기타 → main
+    if (state.view === 'journal') {
+      homeMonth = new Date(journalDate.getFullYear(), journalDate.getMonth(), 1);
+      showView('home', true);
+    } else if (state.view === 'home') {
+      showView('home', true);
+    } else {
+      showView('main', true);
+    }
+  }
+});
+
 async function init() {
   initTheme();
   await initDB();
@@ -2078,14 +2110,29 @@ init();
 
 <script>
 if ('serviceWorker' in navigator && !location.hostname.includes('claudeusercontent')) {
-  window.addEventListener('load', () => {
+  window.addEventListener('load', function() {
     navigator.serviceWorker.register('/daetag-ledger/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => {});
+      .then(function(reg) {
+        // 새 SW가 설치되면 감지
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          newWorker.addEventListener('statechange', function() {
+            // 새 SW가 activated 되면 자동 새로고침
+            if (newWorker.state === 'activated') {
+              // 데이터 손실 없이 새 버전 적용
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(function(e) {});
+
+    // 컨트롤러(SW)가 바뀌면 새로고침 (skipWaiting + clients.claim 대응)
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      window.location.reload();
+    });
   });
 }
-
-
 </script>
 </body>
 </html>

@@ -1,33 +1,58 @@
-const CACHE_NAME = 'daetag-v3';
+const CACHE_NAME = 'daetag-v4';
 const ASSETS = [
   '/daetag-ledger/',
   '/daetag-ledger/index.html',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+  '/daetag-ledger/manifest.json',
+  '/daetag-ledger/icon-192.png',
+  '/daetag-ledger/icon-512.png',
 ];
 
-self.addEventListener('install', e => {
+// 설치 즉시 대기 없이 활성화
+self.addEventListener('install', function(e) {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(ASSETS).catch(() => {})
-    )
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(ASSETS);
+    }).then(function() {
+      return self.skipWaiting(); // 핵심: waiting 없이 바로 활성화
+    })
   );
-  self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
+// 활성화 시 구버전 캐시 전부 삭제
+self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(key) {
+          return key !== CACHE_NAME;
+        }).map(function(key) {
+          return caches.delete(key);
+        })
+      );
+    }).then(function() {
+      return self.clients.claim(); // 핵심: 열린 탭 즉시 제어권 획득
+    })
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
+// Network-first 전략: 항상 서버에서 먼저 가져오고, 실패 시 캐시
+self.addEventListener('fetch', function(e) {
+  // POST 등 비GET 요청은 무시
+  if (e.request.method !== 'GET') return;
+
   e.respondWith(
-    fetch(e.request).catch(() =>
-      caches.match(e.request)
-    )
+    fetch(e.request).then(function(response) {
+      // 정상 응답이면 캐시에도 저장
+      if (response && response.status === 200) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(e.request, clone);
+        });
+      }
+      return response;
+    }).catch(function() {
+      // 네트워크 실패 시 캐시에서 제공
+      return caches.match(e.request);
+    })
   );
 });
