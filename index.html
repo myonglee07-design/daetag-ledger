@@ -177,7 +177,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .platform-btn.daegu::before { background: var(--daegu); }
 .platform-btn.super::before { background: var(--super); }
 .platform-btn.logi1::before, .platform-btn.logi2::before { background: var(--logi); }
-.platform-btn.icon::before { background: var(--icon); }
+.platform-btn.icon::before, .platform-btn.icon2::before { background: var(--icon); }
 .platform-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .platform-type { font-size: 10px; color: var(--text-secondary); background: var(--bg-input); padding: 2px 6px; border-radius: 4px; }
 
@@ -193,7 +193,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item.daegu::before { background: var(--daegu); }
 .order-item.super::before { background: var(--super); }
 .order-item.logi1::before, .order-item.logi2::before { background: var(--logi); }
-.order-item.icon::before { background: var(--icon); }
+.order-item.icon::before, .order-item.icon2::before { background: var(--icon); }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
 .order-platform { font-size: clamp(10px, 2.8vw, 12px); color: var(--text-secondary); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; }
@@ -526,7 +526,8 @@ const DEFAULT_PLATFORMS = [
   { id:'super', name:'수퍼드라이버',    types:['delivery'], cls:'super', feeRate:0.2, builtIn:true, active:true },
   { id:'logi1', name:'로지1',           types:['transport'], cls:'logi1', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
   { id:'logi2', name:'로지2',           types:['transport'], cls:'logi2', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
-  { id:'icon',  name:'아이콘 콜마너1',  types:['transport'], cls:'icon',  feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
+  { id:'icon',  name:'아이콘',    types:['transport'], cls:'icon',  feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
+  { id:'icon2', name:'콜마너1',   types:['transport'], cls:'icon2', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
 ];
 let platformList = DEFAULT_PLATFORMS.map(p=>({...p}));
 
@@ -559,11 +560,13 @@ let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무�
 let settings = {
   addrAutocomplete: true,
   workType: null,
+  kakaoAffiliateFee: 800,
   fixedExpenses: [
     { id:'daegu_monthly', name:'대구시민 사용료',         amount:15000, locked:true,  active:true  },
     { id:'logi1_monthly', name:'로지1 사용료',             amount:15000, locked:true,  active:true  },
     { id:'logi2_monthly', name:'로지2 사용료',             amount:15000, locked:true,  active:true  },
-    { id:'icon_monthly',  name:'아이콘 콜마너1 사용료',   amount:15000, locked:true,  active:true  },
+    { id:'icon_monthly',  name:'아이콘 사용료',    amount:15000, locked:true,  active:true  },
+    { id:'icon2_monthly', name:'콜마너1 사용료',   amount:15000, locked:true,  active:true  },
     { id:'super_monthly', name:'수퍼드라이버 사용료',      amount:0,     locked:false, active:false },
     { id:'transport_ins', name:'탁송 보험료',              amount:0,     locked:false, active:false },
     { id:'priority_call', name:'우선콜 서비스',            amount:0,     locked:false, active:false },
@@ -617,6 +620,7 @@ async function loadData() {
     if (s.key === 'fixedExpenses') settings.fixedExpenses = s.value;
     if (s.key === 'addrAutocomplete') settings.addrAutocomplete = s.value;
     if (s.key === 'workType') settings.workType = s.value;
+    if (s.key === 'kakaoAffiliateFee') settings.kakaoAffiliateFee = s.value;
     if (s.key === 'platformList') {
       platformList = s.value.map(p => {
         if (!p.types) p.types = [p.type || 'delivery'];
@@ -632,6 +636,7 @@ async function saveSettings() {
   await dbPut('settings', { key:'addrAutocomplete', value: settings.addrAutocomplete });
   await dbPut('settings', { key:'workType', value: settings.workType });
   await dbPut('settings', { key:'platformList', value: platformList });
+  await dbPut('settings', { key:'kakaoAffiliateFee', value: settings.kakaoAffiliateFee });
   rebuildPlatforms();
 }
 
@@ -883,7 +888,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.2.3';
+var APP_VERSION = 'v1.2.4';
 function renderMain(c) {
   c.innerHTML =
   '<div style="padding:16px;height:calc(100% - 32px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;">' +
@@ -1522,7 +1527,7 @@ function renderPlatformGrid() {
   if (filtered.length > 0) {
     listHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     filtered.forEach(function(p) {
-      const colorMap = {kakao:'#FAE100',tmap:'#0064FF',daegu:'#6366f1',super:'#ec4899',logi1:'#14b8a6',logi2:'#14b8a6',icon:'#f59e0b'};
+      const colorMap = {kakao:'#FAE100',tmap:'#0064FF',daegu:'#6366f1',super:'#ec4899',logi1:'#14b8a6',logi2:'#14b8a6',icon:'#f59e0b',icon2:'#f59e0b'};
       const accentColor = colorMap[p.id] || 'var(--accent)';
       listHTML +=
         '<button onclick="selectPlatform(\'' + p.id + '\')" style="' +
@@ -1600,14 +1605,22 @@ function openOrderForm(pid, orderId) {
     '</div>';
 
   if (pid==='kakao') {
+    var _affFee = isEdit ? (o.affiliateFee || settings.kakaoAffiliateFee || 800) : (settings.kakaoAffiliateFee || 800);
     html +=
-      '<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<div class="form-label">제휴콜</div>' +
-      '<label class="toggle"><input type="checkbox" id="f_affiliate" ' + (isAffiliate?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>' +
+      '<div class="form-group">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<div class="form-label" style="margin:0;">제휴콜</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<input class="form-input form-input-mono" type="number" id="f_affiliate_fee" value="' + _affFee + '" style="width:72px;padding:6px 8px;font-size:13px;" oninput="updateCalc()" placeholder="800">' +
+      '<span style="font-size:12px;color:var(--text-muted);">원</span>' +
+      '<label class="toggle"><input type="checkbox" id="f_affiliate" ' + (isAffiliate?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
+      '</div></div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">' +
       '<div class="form-label" style="margin:0;">수수료 면제</div>' +
       '<label class="toggle"><input type="checkbox" id="f_exempt" ' + (affiliateExempt?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
-      '</div></div>';
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">💡 금액 변경 시 다음 오더에도 자동 적용</div>' +
+      '</div>';
   }
 
   if (pid==='tmap') {
@@ -1777,7 +1790,10 @@ function updateCalc() {
   const feeLabel = fee !== autoFee ? '수수료 (직접입력)' : '수수료 (' + (p.feeRate*100) + '%)';
   let insuranceFee = 0, affiliateFee = 0;
   if (p.id==='daegu') insuranceFee = 800;
-  if (p.id==='kakao' && isAffiliate && !affiliateExempt) affiliateFee = 800;
+  if (p.id==='kakao' && isAffiliate && !affiliateExempt) {
+    var _affFeeEl = document.getElementById('f_affiliate_fee');
+    affiliateFee = _affFeeEl ? (parseInt(_affFeeEl.value)||800) : (settings.kakaoAffiliateFee||800);
+  }
   const expense = fee + insuranceFee + affiliateFee + (p.id==='tmap'&&isAffiliate?tmapExtra:0) + toll + transTotal;
   const net = income - expense;
 
@@ -1806,7 +1822,14 @@ async function submitOrder() {
   const isAffiliate = (document.getElementById('f_affiliate')||{}).checked||false;
   const affiliateExempt = document.getElementById('f_exempt') ? document.getElementById('f_exempt').checked : (p.affiliateExempt||false);
   const tmapExtraFee = parseInt((document.getElementById('f_tmap_extra')||{}).value||0)||0;
-  const affiliateFee = (pid==='kakao'&&isAffiliate&&!affiliateExempt) ? 800 : 0;
+  var _affFeeInput = document.getElementById('f_affiliate_fee');
+  var _affFeeVal = _affFeeInput ? (parseInt(_affFeeInput.value)||800) : (settings.kakaoAffiliateFee||800);
+  // 금액이 변경됐으면 settings에 저장 (다음 오더에 자동 적용)
+  if (pid==='kakao' && _affFeeInput && _affFeeVal !== settings.kakaoAffiliateFee) {
+    settings.kakaoAffiliateFee = _affFeeVal;
+    saveSettings();
+  }
+  const affiliateFee = (pid==='kakao'&&isAffiliate&&!affiliateExempt) ? _affFeeVal : 0;
   const perCallInsurance = pid==='daegu' ? 800 : 0;
   const toll = parseInt((document.getElementById('f_toll')||{}).value||0)||0;
   const autoFee = Math.round(fare * p.feeRate);
@@ -2023,7 +2046,7 @@ async function loadSqlJs(dbBuffer) {
       cashMap[callId][itemId] = (cashMap[callId][itemId]||0) + (money||0);
     }
   }
-  const platformMap = {'카카오':'kakao','카카오드라이버':'kakao','티맵':'tmap','티맵드라이버':'tmap','대구시민':'daegu','수퍼드라이버':'super','로지1':'logi1','로지2':'logi2','아이콘':'icon','콜마너':'icon','기타':'kakao'};
+  const platformMap = {'카카오':'kakao','카카오드라이버':'kakao','티맵':'tmap','티맵드라이버':'tmap','대구시민':'daegu','수퍼드라이버':'super','로지1':'logi1','로지2':'logi2','아이콘':'icon','아이콘콜마너1':'icon','콜마너1':'icon2','콜마너':'icon2','기타':'kakao'};
   const converted = [];
   for (const row of calls.values) {
     const id=row[0], workDate=row[1], app=row[2], orderDt=row[3], start=row[4], end=row[5], visit=row[6], remark=row[7];
