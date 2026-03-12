@@ -317,12 +317,12 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* col3: 순익 */
 .dr-net { display: none; }
-.dr-info { display: flex; align-items: baseline; gap: 3px; flex: 1; min-width: 0; padding: 0 6px; }
+.dr-info { display: flex; align-items: baseline; gap: 3px; flex: 1; min-width: 0; padding: 0 4px; justify-content: flex-end; }
 .dr-info-label { font-size: clamp(10px, 2.6vw, 11px); color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 .dr-info-net { display: flex; align-items: baseline; gap: 4px; }
 
 /* col4: 수입/지출 오른쪽 */
-.dr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; margin-left: auto; }
+.dr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; margin-left: 6px; min-width: 115px; }
 .dr-right-row { display: flex; align-items: center; gap: 3px; }
 .row-label { font-size: clamp(9px, 2.5vw, 11px); color: var(--text-secondary); white-space: nowrap; }
 .row-label.expense-color { color: var(--expense); }
@@ -1857,14 +1857,39 @@ function editOrder(id) {
 }
 
 // ===================== 바텀시트 =====================
+var _sheetOpen = false;
+var _closingFromPopstate = false;
+var _ignoreNextPopstate = false;
 function openSheet(id) {
   document.getElementById('overlay').classList.add('show');
   document.getElementById(id).classList.add('show');
+  if (!_sheetOpen) {
+    _sheetOpen = true;
+    history.pushState({ sheet: true }, '');
+  }
 }
 function closeSheet() {
+  if (!_sheetOpen && !document.querySelector('.bottom-sheet.show')) return;
+  var needHistoryBack = _sheetOpen && !_closingFromPopstate;
+  _sheetOpen = false;
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  if (needHistoryBack) {
+    _ignoreNextPopstate = true;
+    history.back();
+  }
 }
+window.addEventListener('popstate', function(e) {
+  if (_ignoreNextPopstate) {
+    _ignoreNextPopstate = false;
+    return;
+  }
+  if (_sheetOpen) {
+    _closingFromPopstate = true;
+    closeSheet();
+    _closingFromPopstate = false;
+  }
+});
 
 // ===================== 고정 지출 =====================
 function openFixedSheet() {
