@@ -27,9 +27,9 @@
   --accent: #d4a853;
   --accent-dim: rgba(212,168,83,0.15);
   --accent-hover: #e8c06a;
-  --income: #22c55e;
+  --income: #94a3b8;
   --expense: #ef4444;
-  --income-dim: rgba(34,197,94,0.12);
+  --income-dim: rgba(148,163,184,0.10);
   --expense-dim: rgba(239,68,68,0.12);
   --kakao: #FEE500;
   --tmap: #0064FF;
@@ -55,9 +55,9 @@
   --accent: #d4a853;
   --accent-dim: rgba(212,168,83,0.15);
   --accent-hover: #b8902e;
-  --income: #16a34a;
+  --income: #475569;
   --expense: #dc2626;
-  --income-dim: rgba(22,163,74,0.12);
+  --income-dim: rgba(71,85,105,0.10);
   --expense-dim: rgba(220,38,38,0.12);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -329,7 +329,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .row-income { font-size: clamp(11px, 2.8vw, 13px); font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--income); white-space: nowrap; }
 .row-expense { font-size: clamp(10px, 2.6vw, 12px); font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--expense); white-space: nowrap; }
 .row-net { font-size: clamp(15px, 4vw, 18px); font-weight: 700; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
-.holiday-tag { font-size: clamp(10px, 2.8vw, 12px); font-weight: 500; color: var(--text-muted); }
+.holiday-tag { font-size: clamp(10px, 2.8vw, 12px); font-weight: 600; color: var(--accent); }
 
 /* 월 합계 바 */
 .month-summary-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: rgba(249,115,22,0.07); border-top: 1px solid rgba(249,115,22,0.2); }
@@ -393,7 +393,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
     <div style="height:1px;background:var(--border)"></div>
     <div class="parent-bar">
       <div class="parent-bar-item">
-        <div class="parent-bar-label">오늘 건수</div>
+        <div class="parent-bar-label" id="pb_label_count">오늘 건수</div>
         <div class="parent-bar-val" id="pb_todayNet">0건</div>
       </div>
       <div class="parent-bar-divider"></div>
@@ -408,7 +408,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
       </div>
       <div class="parent-bar-divider"></div>
       <div class="parent-bar-item">
-        <div class="parent-bar-label">오늘 순수입</div>
+        <div class="parent-bar-label" id="pb_label_net">오늘 순수입</div>
         <div class="parent-bar-val" id="pb_net">₩0</div>
       </div>
     </div>
@@ -863,26 +863,51 @@ function updateHeader() {
 }
 
 function updateParentBar() {
-  const today = dateStr(currentDate);
-  const todayOrders = orders.filter(o=>o.date===today);
-  const todayCount = todayOrders.length;
-  const todayIncome = todayOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
-  const todayExpense = todayOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
-  const todayNet = todayIncome - todayExpense;
   const pbCount = document.getElementById('pb_todayNet');
-  const pbInc = document.getElementById('pb_income');
-  const pbExp = document.getElementById('pb_expense');
-  const pbNet = document.getElementById('pb_net');
+  const pbInc   = document.getElementById('pb_income');
+  const pbExp   = document.getElementById('pb_expense');
+  const pbNet   = document.getElementById('pb_net');
+  const lbCount = document.getElementById('pb_label_count');
+  const lbNet   = document.getElementById('pb_label_net');
   if (!pbCount) return;
-  pbCount.textContent = todayCount + '건';
+
+  const isMonthly = (currentView === 'home');
+  let cnt, inc, exp, net;
+
+  if (isMonthly) {
+    // 월 기준
+    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const monthOrders = orders.filter(o => {
+      const d = new Date(o.date);
+      return d.getFullYear()===y && d.getMonth()===m;
+    });
+    cnt = monthOrders.length;
+    inc = monthOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
+    exp = monthOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
+    net = inc - exp;
+    if (lbCount) lbCount.textContent = (m+1) + '월 건수';
+    if (lbNet)   lbNet.textContent   = (m+1) + '월 순수입';
+  } else {
+    // 일 기준 (journal)
+    const today = dateStr(journalDate || currentDate);
+    const dayOrders = orders.filter(o=>o.date===today);
+    cnt = dayOrders.length;
+    inc = dayOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
+    exp = dayOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
+    net = inc - exp;
+    if (lbCount) lbCount.textContent = '오늘 건수';
+    if (lbNet)   lbNet.textContent   = '오늘 순수입';
+  }
+
+  pbCount.textContent = cnt + '건';
   pbCount.style.color = 'var(--text-primary)';
-  pbInc.textContent = fmt(todayIncome);
+  pbInc.textContent = fmt(inc);
   pbInc.style.color = 'var(--income)';
-  pbExp.textContent = '-'+fmt(todayExpense);
+  pbExp.textContent = '-'+fmt(exp);
   pbExp.style.color = 'var(--expense)';
   if (pbNet) {
-    pbNet.textContent = fmt(todayNet);
-    pbNet.style.color = todayNet>=0 ? 'var(--income)' : 'var(--expense)';
+    pbNet.textContent = fmt(net);
+    pbNet.style.color = net>=0 ? 'var(--income)' : 'var(--expense)';
   }
 }
 
@@ -900,7 +925,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.3.5';
+var APP_VERSION = 'v1.4.0';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1038,24 +1063,12 @@ function renderHome(c) {
     '<button class="home-month-nav-btn" onclick="changeHomeMonth(1)">&rsaquo;</button>' +
     '</div>';
 
-  const summaryBar =
-    '<div class="month-summary-bar">' +
-    '<div class="msb-left">' +
-    '<span class="msb-label">' + (month+1) + '월</span>' +
-    '<span class="msb-val ' + (totalNet>=0?'income-color':'expense-color') + '">' + fmt(totalNet) + '</span>' +
-    '</div>' +
-    '<div class="msb-right">' +
-    '<div class="msb-row"><span class="msb-key">수입</span><span class="msb-val income-color">' + fmt(totalIncome) + '</span></div>' +
-    '<div class="msb-row"><span class="msb-key expense-color">지출</span><span class="msb-val expense-color">-' + fmt(totalExpense) + '</span></div>' +
-    '</div></div>';
-
   c.innerHTML =
     '<div style="display:flex;flex-direction:column;height:100%;">' +
     nav +
     '<div class="content" id="dayScrollArea" style="flex:1;overflow-y:auto;">' +
     '<div class="day-list">' + dayRows + '</div>' +
     '</div>' +
-    summaryBar +
     '</div>';
 
   if (isCurrentMonth) {
