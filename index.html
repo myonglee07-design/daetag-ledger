@@ -236,7 +236,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .parent-bar-divider { width: 1px; background: var(--border); margin: 8px 0; flex-shrink: 0; }
 
 /* FAB */
-.fab { position: fixed; bottom: calc(168px + env(safe-area-inset-bottom)); right: calc(50% - 228px); width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(249,115,22,0.4); z-index: 50; }
+.fab { position: fixed; bottom: calc(148px + env(safe-area-inset-bottom)); right: calc(50% - 228px); width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(249,115,22,0.4); z-index: 50; }
 .fab:active { transform: scale(0.93); }
 @media (max-width: 480px) { .fab { right: 16px; } }
 
@@ -900,7 +900,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.2.6';
+var APP_VERSION = 'v1.3.0';
 function renderMain(c) {
   c.innerHTML =
   '<div style="padding:16px;height:calc(100% - 32px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;">' +
@@ -1596,7 +1596,6 @@ function openOrderForm(pid, orderId) {
   const visitAddrs = isEdit ? (o.visitAddrs || (o.visitAddr ? [o.visitAddr] : [])) : [];
   const isNetAmount = isEdit ? (o.isNetAmount||false) : false;
   const isAffiliate = isEdit ? (o.isAffiliate||false) : false;
-  const affiliateExempt = isEdit ? (o.affiliateExempt !== undefined ? o.affiliateExempt : p.affiliateExempt||false) : (p.affiliateExempt||false);
   const tmapExtraFee = isEdit ? o.tmapExtraFee||0 : 0;
   const transports = isEdit ? (o.transports||[]) : [];
 
@@ -1628,10 +1627,11 @@ function openOrderForm(pid, orderId) {
     '<input class="form-input form-input-mono" type="number" id="f_fee_override" placeholder="자동계산" value="' + (isNetAmount ? 0 : (fare?Math.round(fare*p.feeRate):0)) + '" style="width:100%;" oninput="updateCalc()">' +
     '</div>' +
     '</div>' +
-    '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-muted);">' +
-    '<span>← 요금</span><span>수수료 →</span>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11px;">' +
+    '<span style="color:var(--text-muted);">← 요금</span>' +
+    '<span id="f_net_hint" style="color:var(--accent);display:' + (isNetAmount?'inline':'none') + ';">✅ 실수령액 — 수수료 차감 없음</span>' +
+    '<span style="color:var(--text-muted);">수수료 →</span>' +
     '</div>' +
-    '<div id="f_net_hint" style="font-size:11px;color:var(--accent);margin-top:4px;display:' + (isNetAmount?'block':'none') + ';">✅ 입력값이 실수령액 — 수수료 차감 없음</div>' +
     '</div>';
 
   if (pid==='kakao') {
@@ -1639,17 +1639,12 @@ function openOrderForm(pid, orderId) {
     html +=
       '<div class="form-group">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<div class="form-label" style="margin:0;">제휴콜</div>' +
+      '<div class="form-label" style="margin:0;">제휴콜(건당보험료)</div>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
       '<input class="form-input form-input-mono" type="number" id="f_affiliate_fee" value="' + _affFee + '" style="width:72px;padding:6px 8px;font-size:13px;" oninput="updateCalc()" placeholder="800">' +
       '<span style="font-size:12px;color:var(--text-muted);">원</span>' +
-      '<label class="toggle"><input type="checkbox" id="f_affiliate" ' + (isAffiliate?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
+      '<label class="toggle"><input type="checkbox" id="f_affiliate" onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
       '</div></div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">' +
-      '<div class="form-label" style="margin:0;">수수료 면제</div>' +
-      '<label class="toggle"><input type="checkbox" id="f_exempt" ' + (affiliateExempt?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">💡 금액 변경 시 다음 오더에도 자동 적용</div>' +
       '</div>';
   }
 
@@ -1703,15 +1698,7 @@ function openOrderForm(pid, orderId) {
 
   document.getElementById('orderFormBody').innerHTML = html;
 
-  if (pid==='kakao') {
-    const affChk = document.getElementById('f_affiliate');
-    if (affChk) {
-      affChk.addEventListener('change', function() {
-        const exemptRow = document.getElementById('f_exempt');
-        updateCalc();
-      });
-    }
-  }
+
 
   updateCalc();
   openSheet('orderSheet');
@@ -1790,7 +1777,7 @@ function toggleNetAmount() {
     feeWrap.style.opacity = isNet ? '0.4' : '1';
     feeWrap.style.pointerEvents = isNet ? 'none' : '';
   }
-  if (hint) hint.style.display = isNet ? 'block' : 'none';
+  if (hint) hint.style.display = isNet ? 'inline' : 'none';
   if (feeEl) feeEl.value = isNet ? 0 : (function() {
     var p = PLATFORMS[selectedPlatform || (editingOrderId ? (orders.find(x=>x.id===editingOrderId)||{}).platform : null)];
     var fare = parseInt((document.getElementById('f_fare')||{}).value||0)||0;
@@ -1830,7 +1817,6 @@ function updateCalc() {
   const tip = parseInt((document.getElementById('f_tip')||{}).value||0)||0;
   const toll = parseInt((document.getElementById('f_toll')||{}).value||0)||0;
   const isAffiliate = (document.getElementById('f_affiliate')||{}).checked||false;
-  const affiliateExempt = (document.getElementById('f_exempt')||{}).checked||false;
   const tmapExtra = parseInt((document.getElementById('f_tmap_extra')||{}).value||0)||0;
   const transports = getFormTransports();
   const transTotal = transports.reduce((s,t)=>s+t.amount,0);
@@ -1849,7 +1835,7 @@ function updateCalc() {
     fee = feeOverrideEl ? (parseInt(feeOverrideEl.value||0)||0) : autoFee;
     feeLabel = fee !== autoFee ? '수수료 (직접입력)' : '수수료 (' + (p.feeRate*100) + '%)';
     if (p.id==='daegu') insuranceFee = 800;
-    if (p.id==='kakao' && isAffiliate && !affiliateExempt) {
+    if (p.id==='kakao' && isAffiliate) {
       var _affFeeEl = document.getElementById('f_affiliate_fee');
       affiliateFee = _affFeeEl ? (parseInt(_affFeeEl.value)||800) : (settings.kakaoAffiliateFee||800);
     }
@@ -1888,7 +1874,6 @@ async function submitOrder() {
   const isNetAmount = (document.getElementById('f_net_amount')||{}).checked||false;
   const fare = parseInt((document.getElementById('f_fare')||{}).value||0)||0;
   const isAffiliate = (document.getElementById('f_affiliate')||{}).checked||false;
-  const affiliateExempt = document.getElementById('f_exempt') ? document.getElementById('f_exempt').checked : (p.affiliateExempt||false);
   const tmapExtraFee = parseInt((document.getElementById('f_tmap_extra')||{}).value||0)||0;
   var _affFeeInput = document.getElementById('f_affiliate_fee');
   var _affFeeVal = _affFeeInput ? (parseInt(_affFeeInput.value)||800) : (settings.kakaoAffiliateFee||800);
@@ -1897,7 +1882,7 @@ async function submitOrder() {
     settings.kakaoAffiliateFee = _affFeeVal;
     saveSettings();
   }
-  const affiliateFee = (pid==='kakao'&&isAffiliate&&!affiliateExempt) ? _affFeeVal : 0;
+  const affiliateFee = (pid==='kakao'&&isAffiliate) ? _affFeeVal : 0;
   const perCallInsurance = pid==='daegu' ? 800 : 0;
   const toll = parseInt((document.getElementById('f_toll')||{}).value||0)||0;
   const autoFee = Math.round(fare * p.feeRate);
@@ -1916,7 +1901,6 @@ async function submitOrder() {
     tip: parseInt((document.getElementById('f_tip')||{}).value||0)||0,
     isNetAmount,
     isAffiliate: isNetAmount ? false : isAffiliate,
-    affiliateExempt: isNetAmount ? false : affiliateExempt,
     affiliateFee: isNetAmount ? 0 : affiliateFee,
     tmapExtraFee: (!isNetAmount&&pid==='tmap'&&isAffiliate) ? tmapExtraFee : 0,
     perCallInsurance: isNetAmount ? 0 : perCallInsurance,
