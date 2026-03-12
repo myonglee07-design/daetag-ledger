@@ -236,7 +236,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .parent-bar-divider { width: 1px; background: var(--border); margin: 8px 0; flex-shrink: 0; }
 
 /* FAB */
-.fab { position: fixed; bottom: calc(118px + env(safe-area-inset-bottom)); right: calc(50% - 228px); width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(249,115,22,0.4); z-index: 50; }
+.fab { position: fixed; bottom: calc(168px + env(safe-area-inset-bottom)); right: calc(50% - 228px); width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(249,115,22,0.4); z-index: 50; }
 .fab:active { transform: scale(0.93); }
 @media (max-width: 480px) { .fab { right: 16px; } }
 
@@ -735,15 +735,27 @@ function showToast(msg, dur=2500) {
 }
 
 function calcOrderNet(o) {
-  const fare = o.fare || 0;
+  const netAmt = o.fare || 0;  // 실수령액 모드: fare = 실수령액
   const extraRoute = o.extraRoute || 0;
   const tip = o.tip || 0;
+  const toll = o.toll || 0;
+  const transTotal = (o.transports||[]).reduce((s,t)=>s+(t.amount||0),0);
+
+  if (o.isNetAmount) {
+    // 역산: 실수령액 → 매출
+    const feeRate = (PLATFORMS[o.platform]||{feeRate:0.2}).feeRate;
+    const grossFare = feeRate < 1 ? Math.round(netAmt / (1 - feeRate)) : netAmt;
+    const fee = grossFare - netAmt;
+    const income = grossFare + extraRoute + tip;
+    const expense = fee + toll + transTotal;
+    return { income, fare: grossFare, netFare: netAmt, extraRoute, tip, fee, insurance:0, affiliateFee:0, tmapExtra:0, toll, transTotal, expense, net: income - expense };
+  }
+
+  const fare = netAmt;
   const fee = o.feeOverride != null ? o.feeOverride : Math.round(fare * (PLATFORMS[o.platform]||{feeRate:0.2}).feeRate);
   const insurance = o.perCallInsurance || 0;
   const affiliateFee = o.affiliateFee || 0;
   const tmapExtra = o.tmapExtraFee || 0;
-  const toll = o.toll || 0;
-  const transTotal = (o.transports||[]).reduce((s,t)=>s+(t.amount||0),0);
   const income = fare + extraRoute + tip;
   const expense = fee + insurance + affiliateFee + tmapExtra + toll + transTotal;
   return { income, fare, extraRoute, tip, fee, insurance, affiliateFee, tmapExtra, toll, transTotal, expense, net: income - expense };
@@ -888,7 +900,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.2.4';
+var APP_VERSION = 'v1.2.6';
 function renderMain(c) {
   c.innerHTML =
   '<div style="padding:16px;height:calc(100% - 32px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;">' +
@@ -1458,7 +1470,9 @@ function orderItemHTML(o, editable) {
   routeHtml += '<span class="order-arrow">▶</span><span>' + end + '</span>';
 
   // 수입/지출 텍스트
-  let incParts = ['요금 ' + fmt(calc.fare)];
+  let incParts = o.isNetAmount
+    ? ['실수령 ' + fmt(o.fare) + ' (매출 ' + fmt(calc.fare) + ')']
+    : ['요금 ' + fmt(calc.fare)];
   if (calc.extraRoute > 0) incParts.push('경유 +' + fmt(calc.extraRoute));
   if (calc.tip > 0) incParts.push('팁 +' + fmt(calc.tip));
 
@@ -1580,6 +1594,7 @@ function openOrderForm(pid, orderId) {
   const startAddr = isEdit ? o.startAddr||'' : '';
   const endAddr = isEdit ? o.endAddr||'' : '';
   const visitAddrs = isEdit ? (o.visitAddrs || (o.visitAddr ? [o.visitAddr] : [])) : [];
+  const isNetAmount = isEdit ? (o.isNetAmount||false) : false;
   const isAffiliate = isEdit ? (o.isAffiliate||false) : false;
   const affiliateExempt = isEdit ? (o.affiliateExempt !== undefined ? o.affiliateExempt : p.affiliateExempt||false) : (p.affiliateExempt||false);
   const tmapExtraFee = isEdit ? o.tmapExtraFee||0 : 0;
@@ -1599,9 +1614,24 @@ function openOrderForm(pid, orderId) {
     '</div>' +
     '<div id="visitList">' + visitInputs + '</div>' +
     '<button type="button" onclick="addVisitRow()" style="width:100%;padding:8px;background:var(--bg-input);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-size:12px;cursor:pointer;margin-bottom:8px;">+ 경유지 추가</button>' +
-    '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
-    '<div style="flex:1;"><div class="form-label">요금 (원)</div><input class="form-input form-input-mono" type="number" id="f_fare" placeholder="0" value="' + (fare||'') + '" style="width:100%;" oninput="onFareInput()"></div>' +
-    '<div style="flex:1;"><div class="form-label">수수료 (원)</div><input class="form-input form-input-mono" type="number" id="f_fee_override" placeholder="자동계산" value="' + (fare?Math.round(fare*p.feeRate):0) + '" style="width:100%;" oninput="updateCalc()"></div>' +
+    '<div style="margin-bottom:6px;">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+    '<div class="form-label" style="margin:0;">요금 (원)</div>' +
+    '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;">' +
+    '<input type="checkbox" id="f_net_amount" ' + (isNetAmount?'checked':'') + ' onchange="toggleNetAmount()" style="accent-color:var(--accent);width:16px;height:16px;">' +
+    '실수령액 모드' +
+    '</label>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<input class="form-input form-input-mono" type="number" id="f_fare" placeholder="0" value="' + (fare||'') + '" style="flex:1;" oninput="onFareInput()">' +
+    '<div id="f_fee_wrap" style="flex:1;' + (isNetAmount ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
+    '<input class="form-input form-input-mono" type="number" id="f_fee_override" placeholder="자동계산" value="' + (isNetAmount ? 0 : (fare?Math.round(fare*p.feeRate):0)) + '" style="width:100%;" oninput="updateCalc()">' +
+    '</div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-muted);">' +
+    '<span>← 요금</span><span>수수료 →</span>' +
+    '</div>' +
+    '<div id="f_net_hint" style="font-size:11px;color:var(--accent);margin-top:4px;display:' + (isNetAmount?'block':'none') + ';">✅ 입력값이 실수령액 — 수수료 차감 없음</div>' +
     '</div>';
 
   if (pid==='kakao') {
@@ -1749,12 +1779,33 @@ function removeVisitRow(btn) {
 function getFormVisitAddrs() {
   return Array.from(document.querySelectorAll('.visit-row')).map(el=>el.value.trim()).filter(Boolean);
 }
+function toggleNetAmount() {
+  var chk = document.getElementById('f_net_amount');
+  var feeWrap = document.getElementById('f_fee_wrap');
+  var hint = document.getElementById('f_net_hint');
+  var feeEl = document.getElementById('f_fee_override');
+  if (!chk) return;
+  var isNet = chk.checked;
+  if (feeWrap) {
+    feeWrap.style.opacity = isNet ? '0.4' : '1';
+    feeWrap.style.pointerEvents = isNet ? 'none' : '';
+  }
+  if (hint) hint.style.display = isNet ? 'block' : 'none';
+  if (feeEl) feeEl.value = isNet ? 0 : (function() {
+    var p = PLATFORMS[selectedPlatform || (editingOrderId ? (orders.find(x=>x.id===editingOrderId)||{}).platform : null)];
+    var fare = parseInt((document.getElementById('f_fare')||{}).value||0)||0;
+    return p ? Math.round(fare * p.feeRate) : 0;
+  })();
+  updateCalc();
+}
+
 function onFareInput() {
   const p = PLATFORMS[selectedPlatform || (editingOrderId ? (orders.find(x=>x.id===editingOrderId)||{}).platform : null)];
   if (!p) return;
   const fare = parseInt(document.getElementById('f_fare').value||0)||0;
   const feeEl = document.getElementById('f_fee_override');
-  if (feeEl) feeEl.value = Math.round(fare * p.feeRate);
+  var isNet = (document.getElementById('f_net_amount')||{}).checked;
+  if (feeEl && !isNet) feeEl.value = Math.round(fare * p.feeRate);
   updateCalc();
 }
 function getFormTransports() {
@@ -1773,6 +1824,7 @@ function updateCalc() {
   const pid = selectedPlatform || (editingOrderId ? (orders.find(x=>x.id===editingOrderId)||{}).platform : null);
   const p = PLATFORMS[pid];
   if (!p) return;
+  const isNetMode = (document.getElementById('f_net_amount')||{}).checked || false;
   const fare = parseInt((document.getElementById('f_fare')||{}).value||0)||0;
   const extraRoute = parseInt((document.getElementById('f_extraRoute')||{}).value||0)||0;
   const tip = parseInt((document.getElementById('f_tip')||{}).value||0)||0;
@@ -1783,24 +1835,39 @@ function updateCalc() {
   const transports = getFormTransports();
   const transTotal = transports.reduce((s,t)=>s+t.amount,0);
 
-  const income = fare + extraRoute + tip;
-  const autoFee = Math.round(fare * p.feeRate);
-  const feeOverrideEl = document.getElementById('f_fee_override');
-  const fee = feeOverrideEl ? (parseInt(feeOverrideEl.value||0)||0) : autoFee;
-  const feeLabel = fee !== autoFee ? '수수료 (직접입력)' : '수수료 (' + (p.feeRate*100) + '%)';
-  let insuranceFee = 0, affiliateFee = 0;
-  if (p.id==='daegu') insuranceFee = 800;
-  if (p.id==='kakao' && isAffiliate && !affiliateExempt) {
-    var _affFeeEl = document.getElementById('f_affiliate_fee');
-    affiliateFee = _affFeeEl ? (parseInt(_affFeeEl.value)||800) : (settings.kakaoAffiliateFee||800);
+  let income, fee, insuranceFee = 0, affiliateFee = 0, feeLabel = '';
+  if (isNetMode) {
+    // 실수령액 역산: 입력값 = 순수입 → 매출 = 순수입 / (1 - 수수료율)
+    const grossFare = p.feeRate < 1 ? Math.round(fare / (1 - p.feeRate)) : fare;
+    fee = grossFare - fare;
+    income = grossFare + extraRoute + tip;
+    feeLabel = '수수료 (역산 ' + Math.round(p.feeRate*100) + '%)';
+  } else {
+    income = fare + extraRoute + tip;
+    const autoFee = Math.round(fare * p.feeRate);
+    const feeOverrideEl = document.getElementById('f_fee_override');
+    fee = feeOverrideEl ? (parseInt(feeOverrideEl.value||0)||0) : autoFee;
+    feeLabel = fee !== autoFee ? '수수료 (직접입력)' : '수수료 (' + (p.feeRate*100) + '%)';
+    if (p.id==='daegu') insuranceFee = 800;
+    if (p.id==='kakao' && isAffiliate && !affiliateExempt) {
+      var _affFeeEl = document.getElementById('f_affiliate_fee');
+      affiliateFee = _affFeeEl ? (parseInt(_affFeeEl.value)||800) : (settings.kakaoAffiliateFee||800);
+    }
   }
-  const expense = fee + insuranceFee + affiliateFee + (p.id==='tmap'&&isAffiliate?tmapExtra:0) + toll + transTotal;
+  const expense = fee + insuranceFee + affiliateFee + (!isNetMode&&p.id==='tmap'&&isAffiliate?tmapExtra:0) + toll + transTotal;
   const net = income - expense;
 
   const box = document.getElementById('calcBox');
   if (!box) return;
-  let rows = '<div class="calc-row"><span>수입</span><span class="calc-val income-color">' + fmt(income) + '</span></div>';
-  rows += '<div class="calc-row"><span>' + feeLabel + '</span><span class="calc-val expense-color">-' + fmt(fee) + '</span></div>';
+  let rows = '';
+  if (isNetMode) {
+    rows += '<div class="calc-row"><span>매출 (역산)</span><span class="calc-val income-color">' + fmt(income - extraRoute - tip) + '</span></div>';
+    rows += '<div class="calc-row"><span>' + feeLabel + '</span><span class="calc-val expense-color">-' + fmt(fee) + '</span></div>';
+    rows += '<div class="calc-row"><span style="color:var(--accent);">실수령액 확인</span><span class="calc-val accent-color">' + fmt(fare) + '</span></div>';
+  } else {
+    rows += '<div class="calc-row"><span>수입</span><span class="calc-val income-color">' + fmt(income) + '</span></div>';
+    rows += '<div class="calc-row"><span>' + feeLabel + '</span><span class="calc-val expense-color">-' + fmt(fee) + '</span></div>';
+  }
   if (insuranceFee) rows += '<div class="calc-row"><span>건당 보험</span><span class="calc-val expense-color">-' + fmt(insuranceFee) + '</span></div>';
   if (affiliateFee) rows += '<div class="calc-row"><span>제휴콜 수수료</span><span class="calc-val expense-color">-' + fmt(affiliateFee) + '</span></div>';
   if (toll) rows += '<div class="calc-row"><span>통행료</span><span class="calc-val expense-color">-' + fmt(toll) + '</span></div>';
@@ -1818,6 +1885,7 @@ async function submitOrder() {
   if (!dtVal) { showToast('날짜/시간을 입력해주세요'); return; }
   const datetime = dtVal.replace('T',' ');
   const date = datetime.split(' ')[0];
+  const isNetAmount = (document.getElementById('f_net_amount')||{}).checked||false;
   const fare = parseInt((document.getElementById('f_fare')||{}).value||0)||0;
   const isAffiliate = (document.getElementById('f_affiliate')||{}).checked||false;
   const affiliateExempt = document.getElementById('f_exempt') ? document.getElementById('f_exempt').checked : (p.affiliateExempt||false);
@@ -1846,9 +1914,12 @@ async function submitOrder() {
     feeOverride,
     extraRoute: parseInt((document.getElementById('f_extraRoute')||{}).value||0)||0,
     tip: parseInt((document.getElementById('f_tip')||{}).value||0)||0,
-    isAffiliate, affiliateExempt, affiliateFee,
-    tmapExtraFee: pid==='tmap'&&isAffiliate ? tmapExtraFee : 0,
-    perCallInsurance,
+    isNetAmount,
+    isAffiliate: isNetAmount ? false : isAffiliate,
+    affiliateExempt: isNetAmount ? false : affiliateExempt,
+    affiliateFee: isNetAmount ? 0 : affiliateFee,
+    tmapExtraFee: (!isNetAmount&&pid==='tmap'&&isAffiliate) ? tmapExtraFee : 0,
+    perCallInsurance: isNetAmount ? 0 : perCallInsurance,
     toll,
     transports: getFormTransports(),
     remark: (document.getElementById('f_remark')||{}).value||'',
