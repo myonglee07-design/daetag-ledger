@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daetag-v1';
+const CACHE_NAME = 'daetag-v3';
 const ASSETS = [
   '/daetag-ledger/',
   '/daetag-ledger/index.html',
@@ -26,6 +26,8 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+    fetch(e.request).catch(() =>
+      caches.match(e.request)
+    )
   );
 });
