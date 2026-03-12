@@ -197,11 +197,11 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
 .order-platform { font-size: clamp(10px, 2.8vw, 12px); color: var(--text-secondary); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; }
-.order-route { font-size: clamp(12px, 3.2vw, 14px); color: var(--text-primary); margin-bottom: 8px; }
+.order-route { font-size: clamp(13px, 3.6vw, 15px); color: var(--text-primary); margin-bottom: 8px; }
 .order-arrow { color: var(--accent); margin: 0 4px; font-size: clamp(10px, 2.8vw, 12px); }
 .order-footer { display: flex; justify-content: space-between; align-items: center; }
 .order-net { font-size: clamp(14px, 3.8vw, 16px); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.order-detail { font-size: clamp(10px, 2.8vw, 12px); color: var(--text-secondary); }
+.order-detail { font-size: clamp(12px, 3.2vw, 13px); color: var(--text-secondary); }
 
 /* 정산 바 */
 .summary-bar { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin: 8px 16px 0; }
@@ -440,8 +440,14 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   <div class="bottom-sheet" id="orderSheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
-      <button class="btn-icon" onclick="closeSheet()">
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+        <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
+        <div style="display:flex;gap:6px;" id="orderTypeToggle">
+          <button id="orderTypeDelivery" onclick="setOrderType('delivery')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚗 대리운전</button>
+          <button id="orderTypeTransport" onclick="setOrderType('transport')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚚 로드탁송</button>
+        </div>
+      </div>
+      <button class="btn-icon" onclick="closeSheet()" style="align-self:flex-start;margin-top:2px;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
@@ -523,7 +529,7 @@ const DEFAULT_PLATFORMS = [
   { id:'kakao', name:'카카오드라이버', types:['delivery'], cls:'kakao', feeRate:0.2, affiliateFee:800, affiliateExempt:true, builtIn:true, active:true },
   { id:'tmap',  name:'티맵드라이버',   types:['delivery'], cls:'tmap',  feeRate:0.2, affiliateFee:null, builtIn:true, active:true },
   { id:'daegu', name:'대구시민',        types:['delivery'], cls:'daegu', feeRate:0.2, perCallInsurance:800, monthlyFee:15000, builtIn:true, active:true },
-  { id:'super', name:'수퍼드라이버',    types:['delivery'], cls:'super', feeRate:0.2, builtIn:true, active:true },
+  { id:'super', name:'수퍼드라이버',    types:['transport'], cls:'super', feeRate:0.2, builtIn:true, active:true },
   { id:'logi1', name:'로지1',           types:['transport'], cls:'logi1', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
   { id:'logi2', name:'로지2',           types:['transport'], cls:'logi2', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
   { id:'icon',  name:'아이콘',    types:['transport'], cls:'icon',  feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
@@ -555,6 +561,7 @@ let currentDate = new Date();
 let monthlyDate = new Date();
 let editingOrderId = null;
 let selectedPlatform = null;
+let platformSelectTab = 'delivery';
 let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
 
 let settings = {
@@ -622,11 +629,26 @@ async function loadData() {
     if (s.key === 'workType') settings.workType = s.value;
     if (s.key === 'kakaoAffiliateFee') settings.kakaoAffiliateFee = s.value;
     if (s.key === 'platformList') {
-      platformList = s.value.map(p => {
+      let loaded = s.value.map(p => {
         if (!p.types) p.types = [p.type || 'delivery'];
         if (p.active === undefined) p.active = true;
+        // 레거시: name이 합쳐진 경우 DEFAULT 기준으로 교정
+        const def = DEFAULT_PLATFORMS.find(function(d){ return d.id === p.id; });
+        if (def) { p.name = def.name; p.cls = def.cls; }  // types는 사용자 설정 존중
         return p;
       });
+      // id 기준 중복 제거 (앞쪽 우선)
+      const seen = {};
+      loaded = loaded.filter(function(p) {
+        if (seen[p.id]) return false;
+        seen[p.id] = true;
+        return true;
+      });
+      // DEFAULT_PLATFORMS에 있는데 DB에 없는 항목 추가
+      DEFAULT_PLATFORMS.forEach(function(def) {
+        if (!seen[def.id]) { loaded.push({...def}); seen[def.id] = true; }
+      });
+      platformList = loaded;
     }
   }
   rebuildPlatforms();
@@ -925,7 +947,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.4.0';
+var APP_VERSION = 'v1.5.1';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1503,7 +1525,10 @@ function orderItemHTML(o, editable) {
   return '<div class="order-item ' + (p.cls||'') + '" onclick="' + (editable ? 'editOrder('+o.id+')' : '') + '">' +
     '<div class="order-item-header">' +
     '<span class="order-time">' + time + '</span>' +
+    '<div style="display:flex;align-items:center;gap:5px;">' +
+    '<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + (p.type==='transport'?'rgba(20,184,166,0.15)':'rgba(212,168,83,0.15)') + ';color:' + (p.type==='transport'?'var(--logi)':'var(--accent)') + ';">' + (p.type==='transport'?'탁송':'대리') + '</span>' +
     '<span class="order-platform">' + (p.name||o.platform) + '</span>' +
+    '</div>' +
     '</div>' +
     '<div class="order-route">' + routeHtml + '</div>' +
     '<div class="order-footer">' +
@@ -1529,7 +1554,7 @@ function showPlatformSelect() {
 function renderPlatformGrid() {
   const grid = document.getElementById('platformGrid');
   const wt = settings.workType || 'both';
-  const showTabs = wt === 'both' || journalType === 'all';
+  const showTabs = true; // 항상 대리/탁송 탭 표시
 
   const filtered = platformList.filter(function(p) {
     const types = p.types || [p.type || 'delivery'];
@@ -1587,13 +1612,32 @@ function switchPlatformTab(tab) { platformSelectTab = tab; journalType = tab; re
 function selectPlatform(pid) { selectedPlatform = pid; closeSheet(); setTimeout(function() { openOrderForm(pid, null); }, 200); }
 
 // ===================== 오더 폼 =====================
+function setOrderType(type) {
+  const btnD = document.getElementById('orderTypeDelivery');
+  const btnT = document.getElementById('orderTypeTransport');
+  if (!btnD) return;
+  if (type === 'delivery') {
+    btnD.style.background = 'var(--accent)'; btnD.style.borderColor = 'var(--accent)'; btnD.style.color = '#fff';
+    btnT.style.background = 'transparent'; btnT.style.borderColor = 'var(--border)'; btnT.style.color = 'var(--text-muted)';
+  } else {
+    btnT.style.background = 'var(--logi)'; btnT.style.borderColor = 'var(--logi)'; btnT.style.color = '#fff';
+    btnD.style.background = 'transparent'; btnD.style.borderColor = 'var(--border)'; btnD.style.color = 'var(--text-muted)';
+  }
+  // 통행료 행: 탁송일 때만 표시
+  var tollRow = document.getElementById('f_toll_row');
+  if (tollRow) tollRow.style.display = (type === 'transport') ? '' : 'none';
+  document.getElementById('orderSheetTitle').dataset.orderType = type;
+}
+
 function openOrderForm(pid, orderId) {
   const p = PLATFORMS[pid];
   editingOrderId = orderId;
   const isEdit = orderId !== null;
   let o = isEdit ? orders.find(x=>x.id===orderId) : null;
 
-  document.getElementById('orderSheetTitle').textContent = isEdit ? '오더 수정' : '오더 추가 — ' + p.name;
+  document.getElementById('orderSheetTitle').textContent = isEdit ? '오더 수정' : '오더 추가';
+  // 대리/탁송 토글 - 플랫폼 타입에 맞게 초기 선택
+  // setOrderType은 openSheet 직후에 호출 (아래)
   document.getElementById('orderSubmitBtn').textContent = isEdit ? '수 정' : '추 가';
 
   const now = new Date();
@@ -1655,8 +1699,9 @@ function openOrderForm(pid, orderId) {
       '<div style="display:flex;align-items:center;gap:8px;">' +
       '<input class="form-input form-input-mono" type="number" id="f_affiliate_fee" value="' + _affFee + '" style="width:72px;padding:6px 8px;font-size:13px;" oninput="updateCalc()" placeholder="800">' +
       '<span style="font-size:12px;color:var(--text-muted);">원</span>' +
-      '<label class="toggle"><input type="checkbox" id="f_affiliate" onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
+      '<label class="toggle"><input type="checkbox" id="f_affiliate" onchange="updateCalc();toggleAffiliateHint(this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
       '</div></div>' +
+      '<div id="f_affiliate_hint" style="font-size:11px;color:var(--logi);margin-top:6px;display:none;">✅ 제휴콜 체크 시 건당보험료가 수수료에서 차감됩니다</div>' +
       '</div>';
   }
 
@@ -1677,16 +1722,15 @@ function openOrderForm(pid, orderId) {
       '<span style="color:var(--expense);font-family:JetBrains Mono,monospace;font-size:14px">-800원</span></div></div>';
   }
 
-  if (p.type==='transport') {
-    html +=
-      '<div class="form-group">' +
-      '<div style="display:flex;align-items:center;gap:10px;">' +
-      '<span class="form-label" style="margin:0;white-space:nowrap;">🛣 고속도로 통행료</span>' +
-      '<input class="form-input form-input-mono" type="number" id="f_toll" placeholder="0" value="' + (toll||'') + '" style="width:90px;flex-shrink:0;" oninput="updateCalc()">' +
-      '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);white-space:nowrap;cursor:pointer;">' +
-      '<input type="checkbox" id="f_toll_pass" onchange="toggleTollPassenger(this)" style="accent-color:var(--accent);"> 손님 하이패스</label>' +
-      '</div></div>';
-  }
+  // 통행료: 항상 렌더, 대리/탁송 토글로 show/hide
+  html +=
+    '<div class="form-group" id="f_toll_row" style="display:' + (p.type==='transport'?'':'none') + ';">' +
+    '<div style="display:flex;align-items:center;gap:10px;">' +
+    '<span class="form-label" style="margin:0;white-space:nowrap;">🛣 고속도로 통행료</span>' +
+    '<input class="form-input form-input-mono" type="number" id="f_toll" placeholder="0" value="' + (toll||'') + '" style="width:90px;flex-shrink:0;" oninput="updateCalc()">' +
+    '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);white-space:nowrap;cursor:pointer;">' +
+    '<input type="checkbox" id="f_toll_pass" onchange="toggleTollPassenger(this)" style="accent-color:var(--accent);"> 손님 하이패스</label>' +
+    '</div></div>';
 
   html +=
     '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
@@ -1713,6 +1757,33 @@ function openOrderForm(pid, orderId) {
 
 
   updateCalc();
+  // 타입 결정: 새 오더 = 사용자가 선택한 탭 기준 / 수정 = 일지 맥락 기준
+  var _otype;
+  if (!isEdit) {
+    // 추가 모드: platformSelectTab이 가장 정확 (사용자가 탁송탭에서 클릭 → transport)
+    _otype = (platformSelectTab === 'transport') ? 'transport' : 'delivery';
+  } else {
+    // 수정 모드
+    _otype = (journalType === 'transport') ? 'transport' : 'delivery';
+  }
+  console.log('[오더폼] pid='+pid+', selectTab='+platformSelectTab+', jType='+journalType+', p.types='+JSON.stringify(p.types)+', result='+_otype);
+  var _togDiv = document.getElementById('orderTypeToggle');
+  if (_togDiv) {
+    var _dStyle = _otype === 'delivery'
+      ? 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;'
+      : 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;';
+    var _tStyle = _otype === 'transport'
+      ? 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--logi);background:var(--logi);color:#fff;cursor:pointer;'
+      : 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;';
+    _togDiv.innerHTML =
+      '<button id="orderTypeDelivery" onclick="setOrderType(&apos;delivery&apos;)" style="' + _dStyle + '">🚗 대리운전</button>' +
+      '<button id="orderTypeTransport" onclick="setOrderType(&apos;transport&apos;)" style="' + _tStyle + '">🚚 로드탁송</button>';
+  }
+  // 통행료 행도 직접 처리
+  var _tollRow = document.getElementById('f_toll_row');
+  if (_tollRow) _tollRow.style.display = (_otype === 'transport') ? '' : 'none';
+  // dataset에 현재 타입 저장
+  document.getElementById('orderSheetTitle').dataset.orderType = _otype;
   openSheet('orderSheet');
 
   setTimeout(function() {
@@ -1778,6 +1849,11 @@ function removeVisitRow(btn) {
 function getFormVisitAddrs() {
   return Array.from(document.querySelectorAll('.visit-row')).map(el=>el.value.trim()).filter(Boolean);
 }
+function toggleAffiliateHint(on) {
+  var el = document.getElementById('f_affiliate_hint');
+  if (el) el.style.display = on ? 'block' : 'none';
+}
+
 function toggleNetAmount() {
   var chk = document.getElementById('f_net_amount');
   var feeWrap = document.getElementById('f_fee_wrap');
