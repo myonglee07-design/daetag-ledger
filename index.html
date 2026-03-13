@@ -1037,7 +1037,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.6';
+var APP_VERSION = 'v1.8.5';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1508,32 +1508,16 @@ function renderSettings(c) {
   <div class="section-label">플랫폼 관리</div>
 
   <div style="margin:0 16px;display:flex;flex-direction:column;gap:8px;">
-    ${platformList.map((p,i)=>`
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${p.name}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">수수료 ${Math.round((p.feeRate||0.2)*100)}%</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-          <div style="display:flex;gap:10px;">
-            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
-              <input type="checkbox" ${p.types.includes('delivery')?'checked':''} onchange="togglePlatformType(${i},'delivery',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리
-            </label>
-            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
-              <input type="checkbox" ${p.types.includes('transport')?'checked':''} onchange="togglePlatformType(${i},'transport',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송
-            </label>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${!p.builtIn?`<button onclick="deletePlatform(${i})" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>`:''}
-            <label class="toggle" style="transform:scale(0.85);transform-origin:right center;">
-              <input type="checkbox" ${p.active?'checked':''} onchange="togglePlatformActive(${i},this.checked)">
-              <div class="toggle-track"></div><div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>`).join('')}
+    ${(function(){
+      var _wt = settings.workType || 'both';
+      var _showD = (_wt === 'both' || _wt === 'delivery');
+      var _showT = (_wt === 'both' || _wt === 'transport');
+      return platformList.map(function(p,i){
+        var dChk = _showD ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('delivery')?'checked':'')+' onchange="togglePlatformType('+i+',\'delivery\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리</label>' : '';
+        var tChk = _showT ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('transport')?'checked':'')+' onchange="togglePlatformType('+i+',\'transport\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송</label>' : '';
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:8px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
+      }).join('');
+    })()}
     <button onclick="openAddPlatformSheet()" style="background:var(--bg-input);border:1px dashed var(--accent);border-radius:10px;padding:12px;color:var(--accent);font-size:14px;cursor:pointer;width:100%;">+ 플랫폼 추가</button>
   </div>
 
@@ -1618,11 +1602,28 @@ function setWorkType(val) {
 
 
 function openAddPlatformSheet() {
+  var _wt = settings.workType || 'both';
   document.getElementById('newP_name').value='';
   document.getElementById('newP_fee').value='20';
-  document.getElementById('newP_delivery').checked=true;
-  document.getElementById('newP_transport').checked=false;
-  openSheet('addPlatformSheet'); // openSheet 통해 history.pushState 처리
+  var _dLabel = document.getElementById('newP_delivery').parentElement;
+  var _tLabel = document.getElementById('newP_transport').parentElement;
+  if (_wt === 'delivery') {
+    document.getElementById('newP_delivery').checked=true;
+    document.getElementById('newP_transport').checked=false;
+    _dLabel.style.display = '';
+    _tLabel.style.display = 'none';
+  } else if (_wt === 'transport') {
+    document.getElementById('newP_delivery').checked=false;
+    document.getElementById('newP_transport').checked=true;
+    _dLabel.style.display = 'none';
+    _tLabel.style.display = '';
+  } else {
+    document.getElementById('newP_delivery').checked=true;
+    document.getElementById('newP_transport').checked=false;
+    _dLabel.style.display = '';
+    _tLabel.style.display = '';
+  }
+  openSheet('addPlatformSheet');
 }
 async function addPlatform() {
   const name = document.getElementById('newP_name').value.trim();
@@ -1954,9 +1955,19 @@ function openOrderForm(pid, orderId) {
     var _tStyle = _otype === 'transport'
       ? 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--logi);background:var(--logi);color:#fff;cursor:pointer;'
       : 'flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;';
-    _togDiv.innerHTML =
-      '<button id="orderTypeDelivery" onclick="setOrderType(&apos;delivery&apos;)" style="' + _dStyle + '">🚗 대리운전</button>' +
-      '<button id="orderTypeTransport" onclick="setOrderType(&apos;transport&apos;)" style="' + _tStyle + '">🚚 로드탁송</button>';
+    var _dBtn = '<button id="orderTypeDelivery" onclick="setOrderType(&apos;delivery&apos;)" style="' + _dStyle + '">🚗 대리운전</button>';
+    var _tBtn = '<button id="orderTypeTransport" onclick="setOrderType(&apos;transport&apos;)" style="' + _tStyle + '">🚚 로드탁송</button>';
+    var _showD = false, _showT = false;
+    if (isEdit) {
+      var _pt = (p.types || [p.type || 'delivery']);
+      _showD = _pt.includes('delivery');
+      _showT = _pt.includes('transport');
+    } else {
+      _showD = (platformSelectTab !== 'transport');
+      _showT = (platformSelectTab === 'transport');
+    }
+    _togDiv.innerHTML = (_showD ? _dBtn : '') + (_showT ? _tBtn : '');
+    _togDiv.style.display = (_showD && _showT) ? 'flex' : 'none';
   }
   // 통행료 행도 직접 처리
   var _tollRow = document.getElementById('f_toll_row');
