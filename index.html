@@ -85,9 +85,19 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   white-space: nowrap;
 }
 
-/* 스크롤 영역 */
-.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; min-height: 0; }
-.content::-webkit-scrollbar { display: none; }
+/* 스크롤 영역 — Capacitor WebView 호환: position fixed */
+#mainContent {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  top: 60px; /* JS가 정확한 값으로 덮어씀 */
+  max-width: 480px;
+  margin: 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 70px;
+}
+#mainContent::-webkit-scrollbar { display: none; }
 
 /* 하단 고정 실수입 바 */
 #parentBar {
@@ -1024,15 +1034,40 @@ function updateParentBar() {
 }
 
 // ===================== 렌더링 =====================
+// ===================== 콘텐츠 높이 (Capacitor WebView 호환) =====================
+function fixContentHeight() {
+  var mc = document.getElementById('mainContent');
+  if (!mc) return;
+  // 헤더 아래부터 화면 끝까지 고정
+  var header = document.querySelector('.header');
+  var orangeLine = document.querySelector('.orange-line');
+  var topPx = 0;
+  if (header) topPx = header.getBoundingClientRect().bottom;
+  if (orangeLine) {
+    var olb = orangeLine.getBoundingClientRect().bottom;
+    if (olb > topPx) topPx = olb;
+  }
+  mc.style.top = topPx + 'px';
+}
+window.addEventListener('resize', fixContentHeight);
+
 function render() {
-  const c = document.getElementById('mainContent');
-  c.innerHTML = '';
-  if (currentView==='main') renderMain(c);
-  else if (currentView==='home') renderHome(c);
-  else if (currentView==='journal') renderJournal(c);
-  else if (currentView==='monthly') renderMonthly(c);
-  else if (currentView==='settings') renderSettings(c);
-  else if (currentView==='backup') renderBackup(c);
+  try {
+    var c = document.getElementById('mainContent');
+    if (!c) return;
+    c.innerHTML = '';
+    fixContentHeight();
+    if (currentView==='main') renderMain(c);
+    else if (currentView==='home') renderHome(c);
+    else if (currentView==='journal') renderJournal(c);
+    else if (currentView==='monthly') renderMonthly(c);
+    else if (currentView==='settings') renderSettings(c);
+    else if (currentView==='backup') renderBackup(c);
+  } catch(e) {
+    console.error('[render] 에러:', e);
+    var c = document.getElementById('mainContent');
+    if (c) c.innerHTML = '<div style="padding:24px;color:red;font-size:14px;">렌더 오류: ' + e.message + '</div>';
+  }
 }
 
 // --- 메인 ---
@@ -1046,7 +1081,7 @@ function renderMain(c) {
   const _svgBackup  = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="42" height="42"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-3.5-3.5M12 15l3.5-3.5"/><path stroke-linecap="round" d="M5 18v1a2 2 0 002 2h10a2 2 0 002-2v-1"/></svg>';
   const _fs = "'Noto Sans KR',sans-serif";
   c.innerHTML =
-  '<div style="padding:16px 16px 8px;flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
+  '<div style="padding:16px 16px 8px;height:calc(100% - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
     '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;">' +
       _svgJournal +
       '<div style="text-align:center;">' +
@@ -1193,9 +1228,9 @@ function renderHome(c) {
     '</div>';
 
   c.innerHTML =
-    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
+    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
     nav +
-    '<div id="dayScrollArea" style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' +
+    '<div class="content" id="dayScrollArea" style="flex:1;overflow-y:auto;">' +
     '<div class="day-list">' + dayRows + '</div>' +
     '</div>' +
     '</div>';
@@ -1265,8 +1300,8 @@ function renderJournal(c) {
   }
 
   c.innerHTML =
-    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
-    '<div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' + itemsHtml + '</div>' +
+    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
+    '<div style="flex:1;overflow-y:auto;">' + itemsHtml + '</div>' +
     '</div>';
 
   // ③ 스와이프로 전날/다음날 이동
@@ -1360,9 +1395,9 @@ function renderMonthly(c) {
   }
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
+    '<div style="display:flex;flex-direction:column;height:100%;">' +
     nav + tabs +
-    '<div style="flex:1;overflow-y:auto;padding-bottom:40px;min-height:0;-webkit-overflow-scrolling:touch;">' +
+    '<div style="flex:1;overflow-y:auto;padding-bottom:40px;">' +
     summary + fixedHtml + finalBox + platformHtml +
     '</div></div>';
 }
@@ -1423,9 +1458,9 @@ function renderStats(c) {
     '<span style="font-weight:800;color:' + (yearTotal>=0?'var(--income)':'var(--expense)') + ';">' + fmt(yearTotal) + '</span></div>';
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
+    '<div style="display:flex;flex-direction:column;height:100%;">' +
     nav + tabBar() +
-    '<div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' + totalBox + listHtml + '</div>' +
+    '<div style="flex:1;overflow-y:auto;">' + totalBox + listHtml + '</div>' +
     '</div>';
 }
 
@@ -1654,12 +1689,13 @@ async function clearAddrHistory() {
 
 // ===================== 오더 아이템 HTML =====================
 function orderItemHTML(o, editable) {
+  try {
   const calc = calcOrderNet(o);
   const p = PLATFORMS[o.platform] || {};
   const time = o.datetime ? (o.datetime.split(' ')[1]||'').substring(0,5) : '';
   const start = o.startAddr||'출발지';
   const end = o.endAddr||'도착지';
-  const visits = o.visitAddrs || (o.visitAddr ? [o.visitAddr] : []);
+  const visits = Array.isArray(o.visitAddrs) ? o.visitAddrs : (o.visitAddr ? [o.visitAddr] : []);
 
   // 경로 HTML
   let routeHtml = '<span>' + start + '</span>';
@@ -1705,6 +1741,10 @@ function orderItemHTML(o, editable) {
     '</div>' +
     (o.remark ? '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">📝 ' + o.remark + '</div>' : '') +
     '</div>';
+  } catch(e) {
+    console.error('[orderItemHTML] 에러:', e, o);
+    return '<div class="order-item" style="padding:12px;color:var(--expense);">오더 표시 오류: ' + e.message + '</div>';
+  }
 }
 
 function showPlatformSelect() {
@@ -2536,6 +2576,10 @@ async function init() {
   await loadData();
   applyFontSize(settings.fontSize || 'sm');
   showView('main');
+  // Capacitor WebView: 여러 타이밍에 높이 재계산 (뷰포트 지연 대응)
+  setTimeout(fixContentHeight, 50);
+  setTimeout(fixContentHeight, 200);
+  setTimeout(fixContentHeight, 500);
 }
 init();
 
