@@ -1037,7 +1037,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.0';
+var APP_VERSION = 'v1.8.2';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2194,18 +2194,30 @@ async function submitOrder() {
   if (obj.startAddr) await saveAddrHistory(obj.startAddr);
   if (obj.endAddr) await saveAddrHistory(obj.endAddr);
   for (const v of (obj.visitAddrs||[])) await saveAddrHistory(v);
-  // closeSheet() 먼저 (history.back() popstate 처리) → 이후 render
-  closeSheet();
-  setTimeout(function() { render(); updateParentBar(); }, 320);
+  // 시트 UI 먼저 닫기 (history 조작 없이)
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  // 렌더 즉시 실행 (setTimeout 레이스 제거)
+  render();
+  updateParentBar();
+  // history 정리 (popstate에서 뷰 전환 방지)
+  _sheetHistoryPending = true;
+  history.back();
 }
 async function deleteOrder(id) {
   if (!confirm('이 오더를 삭제할까요?')) return;
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
-  closeSheet();
-  setTimeout(function() { render(); updateParentBar(); }, 320);
-  closeSheet();
+  // 시트 UI 먼저 닫기
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  // 렌더 즉시 실행
+  render();
+  updateParentBar();
   showToast('삭제되었습니다');
+  // history 정리
+  _sheetHistoryPending = true;
+  history.back();
 }
 function editOrder(id) {
   const o = orders.find(x=>x.id===id);
@@ -2421,8 +2433,10 @@ async function loadSqlJs(dbBuffer) {
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
   // [1] 코드에서 closeSheet() 호출로 발생한 history.back() → 뷰 전환 없이 패스
+  // render() 재호출: Capacitor WebView에서 history.back() 후 mainContent 공백 방지
   if (_sheetHistoryPending) {
     _sheetHistoryPending = false;
+    render();
     return;
   }
 
