@@ -86,7 +86,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 
 /* 스크롤 영역 */
-.content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; }
+.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; min-height: 0; }
 .content::-webkit-scrollbar { display: none; }
 
 /* 하단 고정 실수입 바 */
@@ -1037,7 +1037,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.2';
+var APP_VERSION = 'v1.8.3';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1046,7 +1046,7 @@ function renderMain(c) {
   const _svgBackup  = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="42" height="42"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-3.5-3.5M12 15l3.5-3.5"/><path stroke-linecap="round" d="M5 18v1a2 2 0 002 2h10a2 2 0 002-2v-1"/></svg>';
   const _fs = "'Noto Sans KR',sans-serif";
   c.innerHTML =
-  '<div style="padding:16px 16px 8px;height:calc(100% - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
+  '<div style="padding:16px 16px 8px;flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
     '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;">' +
       _svgJournal +
       '<div style="text-align:center;">' +
@@ -1193,9 +1193,9 @@ function renderHome(c) {
     '</div>';
 
   c.innerHTML =
-    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
+    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
     nav +
-    '<div class="content" id="dayScrollArea" style="flex:1;overflow-y:auto;">' +
+    '<div id="dayScrollArea" style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' +
     '<div class="day-list">' + dayRows + '</div>' +
     '</div>' +
     '</div>';
@@ -1265,8 +1265,8 @@ function renderJournal(c) {
   }
 
   c.innerHTML =
-    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
-    '<div style="flex:1;overflow-y:auto;">' + itemsHtml + '</div>' +
+    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
+    '<div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' + itemsHtml + '</div>' +
     '</div>';
 
   // ③ 스와이프로 전날/다음날 이동
@@ -1360,9 +1360,9 @@ function renderMonthly(c) {
   }
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
+    '<div style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
     nav + tabs +
-    '<div style="flex:1;overflow-y:auto;padding-bottom:40px;">' +
+    '<div style="flex:1;overflow-y:auto;padding-bottom:40px;min-height:0;-webkit-overflow-scrolling:touch;">' +
     summary + fixedHtml + finalBox + platformHtml +
     '</div></div>';
 }
@@ -1423,9 +1423,9 @@ function renderStats(c) {
     '<span style="font-weight:800;color:' + (yearTotal>=0?'var(--income)':'var(--expense)') + ';">' + fmt(yearTotal) + '</span></div>';
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
+    '<div style="display:flex;flex-direction:column;flex:1;min-height:0;">' +
     nav + tabBar() +
-    '<div style="flex:1;overflow-y:auto;">' + totalBox + listHtml + '</div>' +
+    '<div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">' + totalBox + listHtml + '</div>' +
     '</div>';
 }
 
