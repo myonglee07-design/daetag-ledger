@@ -1059,7 +1059,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.0.7';
+var APP_VERSION = 'v2.1.3';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1534,8 +1534,8 @@ function renderBackup(c) {
   <div style="padding:16px;">
   <div class="section-label">백업 / 복원</div>
   <div style="margin:0 0 16px;display:flex;flex-direction:column;gap:10px;">
-    <button class="btn-secondary" onclick="backupToFile()">💾 백업 다운로드 (ZIP)</button>
-    <button class="btn-secondary" onclick="document.getElementById('restoreInput2').click()">📂 백업 복원 (ZIP)</button>
+    <button class="btn-secondary" onclick="backupToFile()">💾 대탁 백업</button>
+    <button class="btn-secondary" onclick="document.getElementById('restoreInput2').click()">📂 대탁 복원</button>
     <input type="file" id="restoreInput2" accept=".zip" style="display:none" onchange="restoreFromFile(this)">
   </div>
   <div class="section-label">기존 데이터 가져오기</div>
@@ -1633,8 +1633,8 @@ function renderSettings(c) {
 
   <div class="section-label">백업 / 복원</div>
   <div style="margin:0 16px;display:flex;flex-direction:column;gap:10px;">
-    <button class="btn-secondary" onclick="backupToFile()">💾 백업 다운로드 (ZIP)</button>
-    <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()">📂 백업 복원 (ZIP)</button>
+    <button class="btn-secondary" onclick="backupToFile()">💾 대탁 백업</button>
+    <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()">📂 대탁 복원</button>
     <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restoreFromFile(this)">
   </div>
 
@@ -1643,6 +1643,12 @@ function renderSettings(c) {
     <button class="btn-secondary" onclick="document.getElementById('importInput').click()">📥 대리가계부 DB 가져오기 (ZIP)</button>
     <input type="file" id="importInput" accept=".zip,.db" style="display:none" onchange="importLegacyDB(this)">
     <div style="font-size:12px;color:var(--text-muted);padding:4px 2px;">기존 대리가계부 앱의 백업 ZIP 파일을 선택하면 자동으로 변환합니다.</div>
+  </div>
+
+  <div class="section-label" style="color:var(--expense);">위험 구역</div>
+  <div style="margin:0 16px 32px;">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">비밀번호: <b>0000</b> · 모든 콜 데이터와 설정이 삭제됩니다</div>
+    <button class="btn-secondary" style="border-color:var(--expense);color:var(--expense);width:100%;" onclick="resetAppConfirm()">⚠️ 완전 초기화</button>
   </div>
   </div>
   `;
@@ -2420,7 +2426,15 @@ async function saveFixedExpenses() { await saveSettings(); closeSheet(); showToa
 async function backupToFile() {
   try {
     showToast('백업 준비 중...', 5000);
-    const data = { version:'1.0', exportDate: new Date().toISOString(), orders, settings };
+    const data = {
+      version: '2.0',
+      exportDate: new Date().toISOString(),
+      orders,
+      settings,
+      platformList,
+      addrHistory,
+      theme: localStorage.getItem('appTheme') || ''
+    };
     const json = JSON.stringify(data);
     const zip = new JSZip();
     const fname = 'driver_ledger_' + dateStr(new Date()) + '.json';
@@ -2454,19 +2468,19 @@ async function restoreFromFile(input) {
     const text = await jsonFile.async('text');
     const data = JSON.parse(text);
     const count = (data.orders||[]).length;
-    if (!confirm('백업 날짜: ' + data.exportDate + '\n' + count + '건의 데이터가 있습니다.\n복원하면 현재 데이터가 덮어씌워집니다. 계속할까요?')) return;
+    const expDate = data.exportDate ? data.exportDate.slice(0,10) : '알 수 없음';
+    showToast('복원 시작: ' + expDate + ' 백업 (' + count + '건)', 3000);
 
     showToast('복원 중... (0/' + count + ')', 30000);
 
-    // 1) 기존 데이터 삭제
+    // 1) 기존 orders 삭제
     await new Promise(function(res, rej) {
       var tx = db.transaction('orders','readwrite');
       tx.objectStore('orders').clear();
-      tx.oncomplete = res;
-      tx.onerror = rej;
+      tx.oncomplete = res; tx.onerror = rej;
     });
 
-    // 2) 배치로 나눠서 저장 (500건씩)
+    // 2) orders 배치 복구 (500건씩)
     var allOrders = data.orders || [];
     var BATCH = 500;
     for (var i = 0; i < allOrders.length; i += BATCH) {
@@ -2474,19 +2488,45 @@ async function restoreFromFile(input) {
       await new Promise(function(res, rej) {
         var tx = db.transaction('orders','readwrite');
         var store = tx.objectStore('orders');
-        for (var j = 0; j < chunk.length; j++) {
-          store.put(chunk[j]);
-        }
-        tx.oncomplete = res;
-        tx.onerror = function(e) { rej(e.target.error); };
+        for (var j = 0; j < chunk.length; j++) store.put(chunk[j]);
+        tx.oncomplete = res; tx.onerror = function(e) { rej(e.target.error); };
       });
-      var done = Math.min(i + BATCH, allOrders.length);
-      showToast('복원 중... (' + done + '/' + count + ')', 30000);
+      showToast('복원 중... (' + Math.min(i+BATCH,allOrders.length) + '/' + count + ')', 30000);
+    }
+    orders = allOrders;
+
+    // 3) settings 복구
+    if (data.settings) settings = Object.assign(settings, data.settings);
+
+    // 4) platformList 복구 (v2.0 이상)
+    if (data.platformList && Array.isArray(data.platformList)) {
+      platformList = data.platformList;
     }
 
-    orders = allOrders;
-    if (data.settings) settings = data.settings;
+    // 5) addrHistory 복구
+    if (data.addrHistory && Array.isArray(data.addrHistory) && data.addrHistory.length > 0) {
+      await new Promise(function(res, rej) {
+        var tx = db.transaction('addrHistory','readwrite');
+        tx.objectStore('addrHistory').clear();
+        tx.oncomplete = res; tx.onerror = rej;
+      });
+      for (var h = 0; h < data.addrHistory.length; h++) {
+        await dbPut('addrHistory', data.addrHistory[h]);
+      }
+      addrHistory = data.addrHistory;
+    }
+
+    // 6) theme 복구
+    if (data.theme !== undefined) {
+      localStorage.setItem('appTheme', data.theme);
+      document.documentElement.setAttribute('data-theme', data.theme);
+      updateThemeIcon(data.theme);
+    }
+
+    // 7) 저장 및 적용
     await saveSettings();
+    applyFontSize(settings.fontSize || 'md');
+    rebuildPlatforms();
     showToast('복원 완료! (' + count + '건)', 3000);
     render();
   } catch(e) { showToast('복원 실패: '+e.message); }
@@ -2530,15 +2570,15 @@ async function loadSqlJs(dbBuffer) {
       cashMap[callId][itemId] = (cashMap[callId][itemId]||0) + (money||0);
     }
   }
-  const platformMap = {'카카오':'kakao','카카오드라이버':'kakao','티맵':'tmap','티맵드라이버':'tmap','대구시민':'daegu','수퍼드라이버':'super','로지1':'logi1','로지2':'logi2','아이콘':'icon','아이콘콜마너1':'icon','콜마너1':'icon2','콜마너':'icon2','기타':'kakao'};
+  const platformMap = {'카카오':'kakao','카카오드라이버':'kakao','티맵':'tmap','티맵드라이버':'tmap','대구시민':'daegu','수퍼드라이버':'super','로지1':'logi1','로지2':'logi2','아이콘':'icon','아이콘콜마너1':'icon','콜마너1':'icon2','콜마너':'icon2','기타':'unknown'};
   const converted = [];
   for (const row of calls.values) {
     const id=row[0], workDate=row[1], app=row[2], orderDt=row[3], start=row[4], end=row[5], visit=row[6], remark=row[7];
     const c = cashMap[id]||{};
     const fare=c[1]||0, extraRoute=c[2]||0, tip=c[3]||0;
     const feeRaw=Math.abs(c[4]||0), transRaw=Math.abs(c[5]||0);
-    const pid = platformMap[app]||'kakao';
-    const p = PLATFORMS[pid];
+    const pid = platformMap[app]||'unknown';
+    const p = PLATFORMS[pid] || { feeRate: 0.2 };
     const computedFare = feeRaw>0 ? Math.round(feeRaw/p.feeRate) : fare;
     const dt = orderDt||workDate+' 00:00';
     converted.push({
@@ -2575,6 +2615,49 @@ async function loadSqlJs(dbBuffer) {
   render();
 }
 
+// ===================== 앱 완전 초기화 =====================
+function resetAppConfirm() {
+  var pw = window.prompt('완전 초기화 비밀번호를 입력하세요. (비밀번호: 0000) - 모든 콜 데이터와 설정이 삭제됩니다.');
+  if (pw === null) return;
+  if (pw !== '0000') { showToast('비밀번호가 틀렸습니다'); return; }
+  var pw2 = window.prompt('정말 삭제하시겠습니까? 확인을 위해 비밀번호를 한 번 더 입력하세요.');
+  if (pw2 !== '0000') { showToast('취소되었습니다'); return; }
+  resetAllData();
+}
+async function resetAllData() {
+  try {
+    // 1) 메모리 초기화
+    orders = [];
+    addrHistory = [];
+    settings = {
+      fixedExpenses: [], fontSize: 'md',
+      addrAutocomplete: true, kakaoAffiliateFee: 800,
+      workType: 'both'
+    };
+    platformList = DEFAULT_PLATFORMS.map(function(p){ return Object.assign({}, p); });
+
+    // 2) IndexedDB 전체 스토어 삭제
+    await new Promise(function(res, rej) {
+      const tx = db.transaction(['orders','settings','addrHistory'], 'readwrite');
+      tx.objectStore('orders').clear();
+      tx.objectStore('settings').clear();
+      tx.objectStore('addrHistory').clear();
+      tx.oncomplete = res; tx.onerror = rej;
+    });
+
+    // 3) theme localStorage 초기화 (다크 모드로)
+    localStorage.removeItem('appTheme');
+    document.documentElement.setAttribute('data-theme', '');
+    updateThemeIcon('');
+
+    // 4) 플랫폼·폰트 재적용
+    rebuildPlatforms();
+    applyFontSize('md');
+
+    showView('main');
+    showToast('완전 초기화 완료');
+  } catch(e) { showToast('초기화 실패: ' + e.message); }
+}
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
