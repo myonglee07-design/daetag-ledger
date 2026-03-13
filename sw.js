@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daetag-v4';
+const CACHE_NAME = 'daetag-v2.2.1';
 const ASSETS = [
   '/daetag-ledger/',
   '/daetag-ledger/index.html',
