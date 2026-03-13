@@ -1041,7 +1041,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.6';
+var APP_VERSION = 'v1.8.7';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1201,7 +1201,7 @@ function renderHome(c) {
   c.innerHTML =
     '<div id="homeSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
     nav +
-    '<div class="content" id="dayScrollArea" style="flex:1;overflow-y:auto;">' +
+    '<div id="dayScrollArea" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
     '<div class="day-list">' + dayRows + '</div>' +
     '</div>' +
     '</div>';
@@ -2235,13 +2235,10 @@ async function submitOrder() {
   if (obj.startAddr) await saveAddrHistory(obj.startAddr);
   if (obj.endAddr) await saveAddrHistory(obj.endAddr);
   for (const v of (obj.visitAddrs||[])) await saveAddrHistory(v);
-  // 시트 UI 먼저 닫기 (history 조작 없이)
+  // 시트 UI 닫기
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
-  // 렌더 즉시 실행 (setTimeout 레이스 제거)
-  render();
-  updateParentBar();
-  // history 정리 (popstate에서 뷰 전환 방지)
+  // history.back() 후 popstate에서 render (WebView 스크롤 꼬임 방지)
   _sheetHistoryPending = true;
   history.back();
 }
@@ -2249,14 +2246,9 @@ async function deleteOrder(id) {
   if (!confirm('이 오더를 삭제할까요?')) return;
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
-  // 시트 UI 먼저 닫기
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
-  // 렌더 즉시 실행
-  render();
-  updateParentBar();
   showToast('삭제되었습니다');
-  // history 정리
   _sheetHistoryPending = true;
   history.back();
 }
@@ -2477,7 +2469,8 @@ window.addEventListener('popstate', function(e) {
   // render() 재호출: Capacitor WebView에서 history.back() 후 mainContent 공백 방지
   if (_sheetHistoryPending) {
     _sheetHistoryPending = false;
-    render();
+    // history.back() 완료 후 렌더 (WebView navigation 완전히 끝난 뒤)
+    setTimeout(function() { render(); updateParentBar(); }, 60);
     return;
   }
 
