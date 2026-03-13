@@ -609,7 +609,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
       <button class="btn-secondary" style="flex:1" onclick="closeSheet()">취소</button>
       <button class="btn-primary" style="flex:2" onclick="addPlatform()">추 가</button>
     </div>
-    <!-- 앱 초기화 바텀시트 -->
+  </div>
+
+  <!-- 앱 초기화 바텀시트 -->
   <div class="bottom-sheet" id="resetSheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
@@ -1729,6 +1731,7 @@ async function deletePlatform(i) {
     : `'${p.name}' 플랫폼을 목록에서 삭제합니다.`;
   document.getElementById('confirmSheetTitle').textContent = p.name + ' 삭제';
   document.getElementById('confirmSheetMsg').textContent = msg;
+  document.getElementById('confirmSheetOk').textContent = '삭제';
   document.getElementById('confirmSheetOk').onclick = async function() {
     platformList.splice(i, 1);
     rebuildPlatforms();
@@ -2530,7 +2533,16 @@ async function saveFixedExpenses() { await saveSettings(); closeSheet(); showToa
 async function backupToFile() {
   try {
     showToast('백업 준비 중...', 5000);
-    const data = { version:'1.0', exportDate: new Date().toISOString(), orders, settings };
+    const data = {
+      version: '2.0',
+      exportDate: new Date().toISOString(),
+      orders,
+      settings,
+      platformList,
+      addrHistory,
+      showFixedInResult,
+      showFixedInResultLocked
+    };
     const json = JSON.stringify(data);
     const zip = new JSZip();
     const fname = 'driver_ledger_' + dateStr(new Date()) + '.json';
@@ -2557,6 +2569,8 @@ async function restoreFromFile(input) {
   try {
     const file = input.files[0];
     if (!file) return;
+    // input 값 초기화 (같은 파일 재선택 허용)
+    input.value = '';
     showToast('파일 읽는 중...', 5000);
     const zip = await JSZip.loadAsync(file);
     const jsonFile = Object.values(zip.files).find(f=>f.name.endsWith('.json'));
@@ -2564,19 +2578,28 @@ async function restoreFromFile(input) {
     const text = await jsonFile.async('text');
     const data = JSON.parse(text);
     const count = (data.orders||[]).length;
-    if (!confirm('백업 날짜: ' + data.exportDate + '\n' + count + '건의 데이터가 있습니다.\n복원하면 현재 데이터가 덮어씌워집니다. 계속할까요?')) return;
+    const dateStr2 = data.exportDate ? new Date(data.exportDate).toLocaleString('ko-KR') : '알 수 없음';
 
+    // 커스텀 시트로 확인
+    document.getElementById('confirmSheetTitle').textContent = '백업 복원';
+    document.getElementById('confirmSheetMsg').textContent =
+      '백업 날짜: ' + dateStr2 + '\n오더: ' + count + '건\n\n복원하면 현재 데이터가 모두 덮어씌워집니다.\n계속할까요?';
+    document.getElementById('confirmSheetOk').textContent = '복원';
+    document.getElementById('confirmSheetOk').onclick = async function() {
+      closeSheet();
+      await _doRestore(data, count);
+    };
+    openSheet('confirmSheet');
+
+  } catch(e) { showToast('복원 실패: '+e.message); }
+}
+
+async function _doRestore(data, count) {
+  try {
     showToast('복원 중... (0/' + count + ')', 30000);
 
-    // 1) 기존 데이터 삭제
-    await new Promise(function(res, rej) {
-      var tx = db.transaction('orders','readwrite');
-      tx.objectStore('orders').clear();
-      tx.oncomplete = res;
-      tx.onerror = rej;
-    });
-
-    // 2) 배치로 나눠서 저장 (500건씩)
+    // 1) orders 삭제 후 재저장
+    await dbClear('orders');
     var allOrders = data.orders || [];
     var BATCH = 500;
     for (var i = 0; i < allOrders.length; i += BATCH) {
@@ -2584,18 +2607,44 @@ async function restoreFromFile(input) {
       await new Promise(function(res, rej) {
         var tx = db.transaction('orders','readwrite');
         var store = tx.objectStore('orders');
-        for (var j = 0; j < chunk.length; j++) {
-          store.put(chunk[j]);
-        }
+        for (var j = 0; j < chunk.length; j++) store.put(chunk[j]);
         tx.oncomplete = res;
         tx.onerror = function(e) { rej(e.target.error); };
       });
-      var done = Math.min(i + BATCH, allOrders.length);
-      showToast('복원 중... (' + done + '/' + count + ')', 30000);
+      showToast('복원 중... (' + Math.min(i+BATCH, allOrders.length) + '/' + count + ')', 30000);
+    }
+    orders = allOrders;
+
+    // 2) settings 복원
+    if (data.settings) settings = data.settings;
+
+    // 3) platformList 복원
+    if (data.platformList && data.platformList.length > 0) {
+      platformList = data.platformList.map(function(p) {
+        if (!p.types) p.types = [p.type || 'delivery'];
+        if (p.active === undefined) p.active = true;
+        return p;
+      });
+      rebuildPlatforms();
     }
 
-    orders = allOrders;
-    if (data.settings) settings = data.settings;
+    // 4) addrHistory 복원
+    if (data.addrHistory && data.addrHistory.length > 0) {
+      await dbClear('addrHistory');
+      addrHistory = data.addrHistory;
+      await new Promise(function(res, rej) {
+        var tx = db.transaction('addrHistory','readwrite');
+        var store = tx.objectStore('addrHistory');
+        for (var k = 0; k < addrHistory.length; k++) store.put(addrHistory[k]);
+        tx.oncomplete = res;
+        tx.onerror = function(e) { rej(e.target.error); };
+      });
+    }
+
+    // 5) 결산 토글 상태 복원
+    if (data.showFixedInResult !== undefined) showFixedInResult = data.showFixedInResult;
+    if (data.showFixedInResultLocked !== undefined) showFixedInResultLocked = data.showFixedInResultLocked;
+
     await saveSettings();
     showToast('복원 완료! (' + count + '건)', 3000);
     render();
