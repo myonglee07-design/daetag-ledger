@@ -1504,13 +1504,17 @@ function renderStats(c) {
   for (let m=1; m<=12; m++) {
     const ms = statsYear + '-' + String(m).padStart(2,'0');
     const mo = orders.filter(o=>o.date&&o.date.startsWith(ms));
-    const net = mo.reduce((s,o)=>s+calcOrderNet(o).net,0);
+    const totalIncome = mo.reduce((s,o)=>s+calcOrderNet(o).income,0);
+    const totalExpense = mo.reduce((s,o)=>s+calcOrderNet(o).expense,0);
+    const net = totalIncome - totalExpense;
     const count = mo.length;
-    const finalNet = count > 0 ? (showFixedInResult ? net - fixedTotal : net) : 0;
-    months.push({ m, ms, net: finalNet, count });
-    yearTotal += finalNet;
+    const fixedAmt = (count > 0 && showFixedInResult) ? fixedTotal : 0;
+    const finalNet = count > 0 ? net - fixedAmt : 0;
+    months.push({ m, ms, totalIncome, totalExpense, fixedAmt, net, finalNet, count });
+    yearTotal += (count > 0 ? finalNet : 0);
   }
-  const maxVal = Math.max.apply(null, months.map(x=>Math.abs(x.net)).concat([1]));
+  // 최대값: totalIncome 기준 (막대 전체 길이 기준)
+  const maxVal = Math.max.apply(null, months.map(x=>x.totalIncome).concat([1]));
 
   // DB에 있는 연도 목록 자동 추출
   const allYears = Array.from(new Set(orders.map(function(o){ return o.date ? parseInt(o.date.slice(0,4)) : null; }).filter(Boolean))).sort();
@@ -1542,16 +1546,44 @@ function renderStats(c) {
     '</div>' +
     fixedToggleRow;
 
+  // 범례
+  const legendItems = [
+    { color:'var(--income)', label:'순수익' },
+    { color:'#ef4444', label:'수수료·교통비' },
+  ];
+  if (showFixedInResult) legendItems.push({ color:'#8b5cf6', label:'프로그램 사용료' });
+  const legend = '<div style="display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--border);">' +
+    legendItems.map(function(l) {
+      return '<div style="display:flex;align-items:center;gap:4px;">' +
+        '<div style="width:10px;height:10px;border-radius:2px;background:' + l.color + ';flex-shrink:0;"></div>' +
+        '<span style="font-size:11px;color:var(--text-muted);">' + l.label + '</span>' +
+        '</div>';
+    }).join('') + '</div>';
+
   let listHtml = '';
   months.forEach(function(x) {
-    const barW = x.net===0 ? 0 : Math.round(Math.abs(x.net)/maxVal*100);
-    const color = x.net>0?'var(--income)':x.net<0?'var(--expense)':'var(--text-muted)';
+    const base = maxVal;
+    const wNet   = x.count > 0 ? Math.round(Math.max(x.finalNet, 0) / base * 100) : 0;
+    const wExp   = x.count > 0 ? Math.round(x.totalExpense / base * 100) : 0;
+    const wFixed = (x.count > 0 && showFixedInResult) ? Math.round(x.fixedAmt / base * 100) : 0;
+    const netColor = x.finalNet >= 0 ? 'var(--income)' : 'var(--expense)';
+
+    const bar = function(w, color) {
+      return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">' +
+        '<div style="flex:1;height:7px;background:var(--bg-input);border-radius:4px;overflow:hidden;">' +
+        (w > 0 ? '<div style="height:100%;width:' + w + '%;background:' + color + ';border-radius:4px;"></div>' : '') +
+        '</div></div>';
+    };
+
     listHtml +=
       '<div onclick="jumpToMonth(' + x.m + ')" style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;gap:12px;">' +
-      '<div style="width:28px;font-size:13px;color:var(--text-muted);">' + x.m + '월</div>' +
-      '<div style="flex:1;height:8px;background:var(--bg-input);border-radius:4px;overflow:hidden;">' +
-      '<div style="height:100%;width:' + barW + '%;background:' + color + ';border-radius:4px;"></div></div>' +
-      '<div style="width:90px;text-align:right;font-size:13px;font-weight:700;color:' + color + ';">' + (x.count>0?fmtAmt(x.net):'—') + '</div>' +
+      '<div style="width:28px;font-size:13px;color:var(--text-muted);flex-shrink:0;">' + x.m + '월</div>' +
+      '<div style="flex:1;">' +
+        bar(wNet, 'var(--income)') +
+        bar(wExp, '#ef4444') +
+        (showFixedInResult ? bar(wFixed, '#8b5cf6') : '') +
+      '</div>' +
+      '<div style="width:90px;text-align:right;font-size:13px;font-weight:700;color:' + netColor + ';">' + (x.count > 0 ? fmtAmt(x.finalNet) : '—') + '</div>' +
       '</div>';
   });
 
@@ -1563,7 +1595,7 @@ function renderStats(c) {
   c.innerHTML =
     '<div style="display:flex;flex-direction:column;height:100%;">' +
     nav + tabBar() +
-    '<div style="flex:1;overflow-y:auto;">' + totalBox + listHtml + '</div>' +
+    '<div style="flex:1;overflow-y:auto;">' + totalBox + legend + listHtml + '</div>' +
     '</div>';
 }
 
