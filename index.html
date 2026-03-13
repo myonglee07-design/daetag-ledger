@@ -1575,10 +1575,10 @@ function changeMonthlyDate(d) { monthlyDate = new Date(monthlyDate.getFullYear()
 function renderBackup(c) {
   c.innerHTML = `
   <div style="padding:16px;">
-  <div class="section-label">백업 / 복원</div>
+  <div class="section-label">대탁 백업 / 복원</div>
   <div style="margin:0 0 16px;display:flex;flex-direction:column;gap:10px;">
-    <button class="btn-secondary" onclick="backupToFile()">💾 백업 다운로드 (ZIP)</button>
-    <button class="btn-secondary" onclick="document.getElementById('restoreInput2').click()">📂 백업 복원 (ZIP)</button>
+    <button class="btn-secondary" onclick="backupToFile()">💾 대탁 백업 (ZIP)</button>
+    <button class="btn-secondary" onclick="document.getElementById('restoreInput2').click()">📂 대탁 복원 (ZIP)</button>
     <input type="file" id="restoreInput2" accept=".zip" style="display:none" onchange="restoreFromFile(this)">
   </div>
   <div class="section-label">기존 데이터 가져오기</div>
@@ -1689,10 +1689,10 @@ function renderSettings(c) {
     <button class="btn-secondary" onclick="openFixedSheet()">고정 지출 관리</button>
   </div>
 
-  <div class="section-label">백업 / 복원</div>
+  <div class="section-label">대탁 백업 / 복원</div>
   <div style="margin:0 16px;display:flex;flex-direction:column;gap:10px;">
-    <button class="btn-secondary" onclick="backupToFile()">💾 백업 다운로드 (ZIP)</button>
-    <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()">📂 백업 복원 (ZIP)</button>
+    <button class="btn-secondary" onclick="backupToFile()">💾 대탁 백업 (ZIP)</button>
+    <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()">📂 대탁 복원 (ZIP)</button>
     <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restoreFromFile(this)">
   </div>
 
