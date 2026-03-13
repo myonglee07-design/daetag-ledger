@@ -989,11 +989,10 @@ function updateParentBar() {
   const lbNet   = document.getElementById('pb_label_net');
   if (!pbCount) return;
 
-  const isMonthly = (currentView === 'home');
   let cnt, inc, exp, net;
 
-  if (isMonthly) {
-    // 월 기준
+  if (currentView === 'home') {
+    // 월달력 기준
     const y = currentDate.getFullYear(), m = currentDate.getMonth();
     const monthOrders = orders.filter(o => {
       const d = new Date(o.date);
@@ -1005,6 +1004,21 @@ function updateParentBar() {
     net = inc - exp;
     if (lbCount) lbCount.textContent = (m+1) + '월 건수';
     if (lbNet)   lbNet.textContent   = (m+1) + '월 순수입';
+  } else if (currentView === 'monthly') {
+    // 결산 화면: monthlyDate 기준 월
+    const y = monthlyDate.getFullYear(), m = monthlyDate.getMonth();
+    const monthOrders = orders.filter(o => {
+      const d = new Date(o.date);
+      return d.getFullYear()===y && d.getMonth()===m;
+    });
+    cnt = monthOrders.length;
+    inc = monthOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
+    exp = monthOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
+    const rawNet = inc - exp;
+    const fixedTotal = settings.fixedExpenses.filter(f=>f.active&&f.amount>0).reduce((s,f)=>s+(f.amount||0),0);
+    net = (showFixedInResult && cnt > 0) ? rawNet - fixedTotal : rawNet;
+    if (lbCount) lbCount.textContent = y + '년 ' + (m+1) + '월 건수';
+    if (lbNet)   lbNet.textContent   = y + '년 ' + (m+1) + '월 실수입';
   } else {
     // 일 기준 (journal)
     const today = dateStr(journalDate || currentDate);
@@ -1045,7 +1059,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.9';
+var APP_VERSION = 'v1.9.5';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1063,7 +1077,7 @@ function renderMain(c) {
       '</div>' +
     '</button>' +
     '<div style="flex:0 0 170px;display:flex;gap:12px;">' +
-      '<button onclick="showView(\'monthly\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
+      '<button onclick="monthlyDate=new Date();monthlyTab=\'settlement\';showView(\'monthly\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
         _svgMonthly +
         '<div style="text-align:center;">' +
           '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">결산</div>' +
@@ -1316,11 +1330,24 @@ function renderMonthly(c) {
     byPlatform[o.platform].net += calcOrderNet(o).net;
   }
 
+  const yy = monthlyDate.getFullYear();
+  const mm = monthlyDate.getMonth() + 1;
   const nav =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
-    '<button onclick="changeMonthlyDate(-1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">‹</button>' +
-    '<span style="font-size:15px;font-weight:700;color:var(--text-primary);">' + monthKo(monthlyDate) + '</span>' +
-    '<button onclick="changeMonthlyDate(1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">›</button>' +
+    '<div style="background:var(--bg-card);border-bottom:1px solid var(--border);padding:10px 12px 8px;">' +
+    // 년도 행
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+    '<button onclick="changeMonthlyYear(-1)" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:2px 8px;">«</button>' +
+    '<span style="font-size:12px;color:var(--text-muted);letter-spacing:1px;">' + yy + '년</span>' +
+    '<button onclick="changeMonthlyYear(1)" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:2px 8px;">»</button>' +
+    '</div>' +
+    // 월 행
+    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+    '<button onclick="changeMonthlyDate(-1)" style="background:none;border:none;color:var(--text-secondary);font-size:26px;cursor:pointer;padding:0 8px;line-height:1;">‹</button>' +
+    '<div style="text-align:center;">' +
+    '<span style="font-size:26px;font-weight:800;color:var(--text-primary);">' + mm + '월</span>' +
+    '</div>' +
+    '<button onclick="changeMonthlyDate(1)" style="background:none;border:none;color:var(--text-secondary);font-size:26px;cursor:pointer;padding:0 8px;line-height:1;">›</button>' +
+    '</div>' +
     '</div>';
 
   const tabs = tabBar();
@@ -1385,11 +1412,23 @@ function renderMonthly(c) {
     platformHtml += '</div>';
   }
 
+  // 고정지출 수정 버튼 (토글 바로 아래)
+  const fixedEditBtn =
+    '<button onclick="openFixedSheet()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 16px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;">' +
+    '<div style="display:flex;align-items:center;gap:8px;">' +
+    '<span style="font-size:15px;">📋</span>' +
+    '<span style="font-size:13px;color:var(--text-secondary);">월 고정지출 항목 수정</span>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:6px;">' +
+    '<span style="font-size:11px;color:var(--text-muted);">합계 ' + (showFixedInResult ? '<span style=\"color:var(--expense);font-weight:700;\">-' + fmt(fixedTotal) + '</span>' : fmt(fixedTotal)) + '</span>' +
+    '<span style="font-size:16px;color:var(--text-muted);">›</span>' +
+    '</div></button>';
+
   c.innerHTML =
     '<div style="display:flex;flex-direction:column;height:100%;">' +
     nav + tabs +
     '<div style="flex:1;overflow-y:auto;padding-bottom:40px;">' +
-    summary + toggleRow + fixedHtml + finalBox + platformHtml +
+    summary + toggleRow + fixedEditBtn + fixedHtml + finalBox + platformHtml +
     '</div></div>';
 }
 
@@ -1493,7 +1532,8 @@ function renderStats(c) {
 
 function changeStatsYear(d) { statsYear += d; render(); }
 function jumpToMonth(m) { monthlyDate = new Date(statsYear, m-1, 1); monthlyTab = 'settlement'; updateHeader(); render(); }
-function changeMonthlyDate(d) { monthlyDate = new Date(monthlyDate.getFullYear(), monthlyDate.getMonth()+d, 1); updateHeader(); render(); }
+function changeMonthlyDate(d) { monthlyDate = new Date(monthlyDate.getFullYear(), monthlyDate.getMonth()+d, 1); updateHeader(); render(); updateParentBar(); }
+function changeMonthlyYear(d) { monthlyDate = new Date(monthlyDate.getFullYear()+d, monthlyDate.getMonth(), 1); updateHeader(); render(); updateParentBar(); }
 
 // --- 백업 ---
 function renderBackup(c) {
@@ -2338,25 +2378,49 @@ function openFixedSheet() {
   settings.fixedExpenses.forEach(function(f, i) {
     html +=
       '<div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<label class="toggle"><input type="checkbox" id="fixed_active_' + i + '" ' + (f.active?'checked':'') + ' onchange="updateFixedActive(' + i + ',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
-      '<div style="flex:1;margin-left:8px;font-size:13px;color:var(--text-primary);">' + f.name + '</div>' +
-      (f.locked ?
-        '<span style="font-size:13px;color:var(--expense);font-family:JetBrains Mono,monospace;">' + fmt(f.amount) + '</span>' +
-        '<button class="btn-icon" onclick="unlockFixed(' + i + ')" title="잠금 해제">🔒</button>'
-        :
-        '<input type="number" id="fixed_amt_' + i + '" value="' + f.amount + '" onchange="updateFixedAmount(' + i + ',this.value)" class="form-input form-input-mono" style="width:90px;">' +
-        '<button class="btn-icon" onclick="lockFixed(' + i + ')">🔓</button>'
+      // 1줄: 토글 + 이름 + 삭제
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+      '<label class="toggle"><input type="checkbox" ' + (f.active?'checked':'') + ' onchange="updateFixedActive(' + i + ',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
+      '<input type="text" value="' + f.name + '" onchange="updateFixedName(' + i + ',this.value)" placeholder="항목명" class="form-input" style="flex:1;font-size:13px;">' +
+      '<button onclick="removeFixedItem(' + i + ')" style="background:none;border:none;cursor:pointer;color:var(--expense);font-size:18px;padding:2px 4px;flex-shrink:0;">✕</button>' +
+      '</div>' +
+      // 2줄: 금액 입력 + 잠금
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">월 금액</span>' +
+      (f.locked
+        ? '<span style="flex:1;font-size:13px;color:var(--expense);font-family:JetBrains Mono,monospace;font-weight:700;">-' + fmt(f.amount) + '</span>' +
+          '<button class="btn-icon" onclick="unlockFixed(' + i + ')" title="잠금 해제">🔒</button>'
+        : '<input type="number" value="' + f.amount + '" onchange="updateFixedAmount(' + i + ',this.value)" class="form-input form-input-mono" style="flex:1;">' +
+          '<button class="btn-icon" onclick="lockFixed(' + i + ')">🔓</button>'
       ) +
-      '</div></div>';
+      '</div>' +
+      '</div>';
   });
+  // 하단 버튼 행: 올잠금 / 올품 / 추가
+  html +=
+    '<div style="display:flex;gap:8px;margin-bottom:2px;">' +
+    '<button onclick="lockAllFixed()" style="flex:1;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text-secondary);">🔒 All 잠금</button>' +
+    '<button onclick="unlockAllFixed()" style="flex:1;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text-secondary);">🔓 All 풀기</button>' +
+    '</div>' +
+    '<button onclick="addFixedItem()" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:none;border:2px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--text-muted);font-size:13px;">＋ 항목 추가</button>';
   body.innerHTML = html;
   openSheet('fixedSheet');
 }
+function updateFixedName(i, v) { settings.fixedExpenses[i].name = v.trim() || '항목'; }
 function updateFixedActive(i, v) { settings.fixedExpenses[i].active = v; }
 function updateFixedAmount(i, v) { settings.fixedExpenses[i].amount = parseInt(v)||0; }
 function unlockFixed(i) { settings.fixedExpenses[i].locked = false; openFixedSheet(); }
 function lockFixed(i) { settings.fixedExpenses[i].locked = true; openFixedSheet(); }
+function lockAllFixed() { settings.fixedExpenses.forEach(function(f){ f.locked = true; }); openFixedSheet(); }
+function unlockAllFixed() { settings.fixedExpenses.forEach(function(f){ f.locked = false; }); openFixedSheet(); }
+function addFixedItem() {
+  settings.fixedExpenses.push({ name: '새 항목', amount: 0, active: true, locked: false });
+  openFixedSheet();
+}
+function removeFixedItem(i) {
+  settings.fixedExpenses.splice(i, 1);
+  openFixedSheet();
+}
 async function saveFixedExpenses() { await saveSettings(); closeSheet(); showToast('저장되었습니다'); render(); }
 
 // ===================== 백업/복원 =====================
