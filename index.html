@@ -1060,7 +1060,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.1.6';
+var APP_VERSION = 'v2.1.7';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1286,13 +1286,14 @@ function renderJournal(c) {
       '<div style="color:var(--text-muted);font-size:12px;margin-top:6px;">+ 버튼으로 추가하세요</div>' +
       '</div>';
   } else {
-    itemsHtml = dayOrders.map(o => orderItemHTML(o, true)).join('');
+    try {
+      itemsHtml = dayOrders.map(function(o) { return orderItemHTML(o, true); }).join('');
+    } catch(e) {
+      itemsHtml = '<div style="padding:24px 16px;color:var(--expense);font-size:13px;">⚠️ 목록 렌더 오류: ' + e.message + '</div>';
+    }
   }
 
-  c.innerHTML =
-    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
-    '<div style="flex:1;overflow-y:auto;">' + itemsHtml + '</div>' +
-    '</div>';
+  c.innerHTML = '<div id="journalSwipeArea">' + itemsHtml + '</div>';
 
   // ③ 스와이프로 전날/다음날 이동
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
