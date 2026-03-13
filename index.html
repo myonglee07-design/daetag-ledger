@@ -1060,7 +1060,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.1.7';
+var APP_VERSION = 'v2.1.8';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1069,7 +1069,7 @@ function renderMain(c) {
   const _svgBackup  = '<svg fill="none" stroke="var(--accent)" stroke-width="1.6" viewBox="0 0 24 24" width="42" height="42"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-3.5-3.5M12 15l3.5-3.5"/><path stroke-linecap="round" d="M5 18v1a2 2 0 002 2h10a2 2 0 002-2v-1"/></svg>';
   const _fs = "'Noto Sans KR',sans-serif";
   c.innerHTML =
-  '<div style="padding:16px 16px 8px;height:calc(100% - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
+  '<div style="padding:16px 16px 8px;min-height:calc(100vh - 120px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
     '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;">' +
       _svgJournal +
       '<div style="text-align:center;">' +
@@ -1218,9 +1218,9 @@ function renderHome(c) {
     '</div>';
 
   c.innerHTML =
-    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
-    nav +
-    '<div id="dayScrollArea" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
+    '<div id="homeSwipeArea">' +
+    '<div style="position:sticky;top:0;z-index:5;background:var(--bg-primary);">' + nav + '</div>' +
+    '<div id="dayScrollArea">' +
     '<div class="day-list">' + dayRows + '</div>' +
     '</div>' +
     '</div>';
@@ -1228,7 +1228,7 @@ function renderHome(c) {
   if (isCurrentMonth) {
     setTimeout(() => {
       const todayRow = document.getElementById('todayRow');
-      const scroll = document.getElementById('dayScrollArea');
+      const scroll = document.getElementById('mainContent');
       if (todayRow && scroll) {
         scroll.scrollTop = todayRow.offsetTop - (scroll.clientHeight / 2) + (todayRow.offsetHeight / 2);
       }
@@ -1236,7 +1236,7 @@ function renderHome(c) {
   }
 
   // ④ 스와이프로 전월/다음달 이동
-  bindSwipe(document.getElementById('dayScrollArea'), function(dir) {
+  bindSwipe(document.getElementById('homeSwipeArea'), function(dir) {
     changeHomeMonth(dir === 'left' ? 1 : -1);
   });
 
@@ -1255,7 +1255,7 @@ function goToToday() {
   render();
   setTimeout(function() {
     var el = document.getElementById('todayRow');
-    var sc = document.getElementById('dayScrollArea');
+    var sc = document.getElementById('mainContent');
     if (el && sc) sc.scrollTop = el.offsetTop - sc.clientHeight/2 + el.offsetHeight/2;
   }, 50);
 }
@@ -1420,9 +1420,9 @@ function renderMonthly(c) {
     '</div></button>';
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
+    '<div>' +
     nav + tabs +
-    '<div style="flex:1;overflow-y:auto;padding-bottom:40px;">' +
+    '<div style="padding-bottom:40px;">' +
     summary + toggleRow + fixedEditBtn + fixedHtml + finalBox + platformHtml +
     '</div></div>';
 }
@@ -1519,9 +1519,9 @@ function renderStats(c) {
     '<span style="font-weight:800;color:' + (yearTotal>=0?'var(--income)':'var(--expense)') + ';">' + fmtAmt(yearTotal) + '</span></div>';
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
+    '<div>' +
     nav + tabBar() + statsToggleRow + legend +
-    '<div style="flex:1;overflow-y:auto;">' + totalBox + listHtml + '</div>' +
+    '<div>' + totalBox + listHtml + '</div>' +
     '</div>';
 }
 
