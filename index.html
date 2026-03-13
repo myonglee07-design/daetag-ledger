@@ -974,6 +974,12 @@ function showView(v, skipHistory) {
     homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     journalDate = new Date();
   }
+  // monthly 진입 시 올해로 초기화 (jumpToMonth 경유 제외)
+  if (v === 'monthly' && currentView !== 'monthly') {
+    statsYear = new Date().getFullYear();
+    monthlyTab = 'settlement';
+    monthlyFrom = null;
+  }
   currentView = v;
 
   // Android 뒤로가기용 history 스택 관리
@@ -1014,6 +1020,12 @@ function goBack() {
   } else if (currentView === 'journal') {
     homeMonth = new Date(journalDate.getFullYear(), journalDate.getMonth(), 1);
     showView('home');
+  } else if (currentView === 'monthly' && monthlyFrom === 'stats') {
+    // 통계 → 결산으로 왔을 때 뒤로가기 → 통계로 복귀
+    monthlyTab = 'stats';
+    monthlyFrom = null;
+    updateHeader();
+    render();
   } else {
     showView('main');
   }
@@ -1135,7 +1147,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.5';
+var APP_VERSION = 'v1.8.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1385,6 +1397,7 @@ function changeJournalDate(d) {
 // --- 결산 ---
 let monthlyTab = 'settlement';
 let statsYear = new Date().getFullYear();
+let monthlyFrom = null; // 통계 → 결산 이동 추적
 
 function renderMonthly(c) {
   if (monthlyTab === 'stats') { renderStats(c); return; }
@@ -1611,7 +1624,7 @@ function renderStats(c) {
 }
 
 function changeStatsYear(d) { statsYear += d; render(); }
-function jumpToMonth(m) { monthlyDate = new Date(statsYear, m-1, 1); monthlyTab = 'settlement'; updateHeader(); render(); }
+function jumpToMonth(m) { monthlyFrom = monthlyTab; monthlyDate = new Date(statsYear, m-1, 1); monthlyTab = 'settlement'; updateHeader(); render(); }
 function changeMonthlyDate(d) { monthlyDate = new Date(monthlyDate.getFullYear(), monthlyDate.getMonth()+d, 1); updateHeader(); render(); }
 
 // --- 백업 ---
