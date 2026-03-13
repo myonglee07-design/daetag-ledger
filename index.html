@@ -405,11 +405,11 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 [data-fontsize="md"] .row-income, [data-fontsize="md"] .row-expense { font-size: 14px; }
 [data-fontsize="md"] .dr-info-label { font-size: 12px; }
 
-/* lg */
-[data-fontsize="lg"] .day-num-txt { font-size: 22px; }
-[data-fontsize="lg"] .day-name-txt { font-size: 17px; }
-[data-fontsize="lg"] .holiday-tag, [data-fontsize="lg"] .work-tag { font-size: 14px; }
-[data-fontsize="lg"] .call-badge { font-size: 17px; }
+/* lg — 아주크게: 날짜/건수/근무는 md(크게) 사이즈로 캡 */
+[data-fontsize="lg"] .day-num-txt { font-size: 18px; }
+[data-fontsize="lg"] .day-name-txt { font-size: 14px; }
+[data-fontsize="lg"] .holiday-tag, [data-fontsize="lg"] .work-tag { font-size: 12px; }
+[data-fontsize="lg"] .call-badge { font-size: 14px; }
 [data-fontsize="lg"] .order-type-badge { font-size: 14px; }
 [data-fontsize="lg"] .date-nav-title { font-size: 20px; }
 [data-fontsize="lg"] .order-time { font-size: 17px; }
@@ -417,8 +417,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 [data-fontsize="lg"] .order-net { font-size: 20px; }
 [data-fontsize="lg"] .order-detail { font-size: 15px; }
 [data-fontsize="lg"] .order-platform { font-size: 14px; }
-[data-fontsize="lg"] .parent-bar-label { font-size: 16px; }
-[data-fontsize="lg"] .parent-bar-val { font-size: 22px; }
+[data-fontsize="lg"] .parent-bar-label { font-size: 14px; }
+[data-fontsize="lg"] .parent-bar-val { font-size: 18px; }
 [data-fontsize="lg"] .form-label { font-size: 15px; }
 [data-fontsize="lg"] .form-input { font-size: 18px; }
 [data-fontsize="lg"] .btn-primary, [data-fontsize="lg"] .btn-secondary { font-size: 17px; }
@@ -1019,6 +1019,8 @@ function updateParentBar() {
     pbNet.textContent = fmt(net);
     pbNet.style.color = net>=0 ? 'var(--income)' : 'var(--expense)';
   }
+  // ⑥ 하단바 금액 자동축소
+  setTimeout(autoShrinkAmounts, 30);
 }
 
 // ===================== 렌더링 =====================
@@ -1035,7 +1037,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.7.7';
+var APP_VERSION = 'v1.8.0';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1191,7 +1193,7 @@ function renderHome(c) {
     '</div>';
 
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
+    '<div id="homeSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
     nav +
     '<div class="content" id="dayScrollArea" style="flex:1;overflow-y:auto;">' +
     '<div class="day-list">' + dayRows + '</div>' +
@@ -1207,6 +1209,14 @@ function renderHome(c) {
       }
     }, 50);
   }
+
+  // ④ 스와이프로 전월/다음달 이동
+  bindSwipe(document.getElementById('dayScrollArea'), function(dir) {
+    changeHomeMonth(dir === 'left' ? 1 : -1);
+  });
+
+  // ⑤ 금액 자동축소
+  setTimeout(autoShrinkAmounts, 60);
 }
 
 function changeHomeMonth(d) {
@@ -1242,13 +1252,6 @@ function renderJournal(c) {
   const expense = dayOrders.reduce((s,o)=>s+calcOrderNet(o).expense, 0);
   const net = income - expense;
 
-  const nav =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
-    '<button onclick="changeJournalDate(-1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">&#8249;</button>' +
-    '<span class="date-nav-title">' + dateKo(journalDate) + '</span>' +
-    '<button onclick="changeJournalDate(1)" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;">&#8250;</button>' +
-    '</div>';
-
   let itemsHtml = '';
   if (dayOrders.length === 0) {
     itemsHtml =
@@ -1261,14 +1264,15 @@ function renderJournal(c) {
     itemsHtml = dayOrders.map(o => orderItemHTML(o, true)).join('');
   }
 
-  const summaryHtml = '';
-
   c.innerHTML =
-    '<div style="display:flex;flex-direction:column;height:100%;">' +
-    nav +
+    '<div id="journalSwipeArea" style="display:flex;flex-direction:column;height:100%;">' +
     '<div style="flex:1;overflow-y:auto;">' + itemsHtml + '</div>' +
-    summaryHtml +
     '</div>';
+
+  // ③ 스와이프로 전날/다음날 이동
+  bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
+    changeJournalDate(dir === 'left' ? 1 : -1);
+  });
 }
 
 function changeJournalDate(d) {
@@ -2458,6 +2462,58 @@ function applyFontSize(size) {
   document.documentElement.style.fontSize = rootMap[size] || '14px';
   // data-fontsize 속성으로 CSS 선택자 트리거
   document.documentElement.setAttribute('data-fontsize', size || 'sm');
+}
+
+// ===================== 스와이프 감지 =====================
+function bindSwipe(el, callback) {
+  if (!el) return;
+  var _sx = 0, _sy = 0;
+  el.addEventListener('touchstart', function(e) {
+    _sx = e.touches[0].clientX;
+    _sy = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - _sx;
+    var dy = e.changedTouches[0].clientY - _sy;
+    // 수평 이동이 50px 이상이고 수직보다 클 때만
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      callback(dx < 0 ? 'left' : 'right');
+    }
+  }, { passive: true });
+}
+
+// ===================== 금액 자동축소 =====================
+function autoShrinkAmounts() {
+  // 월달력 day-row 안의 금액 텍스트
+  document.querySelectorAll('.row-net, .row-income, .row-expense').forEach(function(el) {
+    el.style.fontSize = '';
+    var parent = el.closest('.dr-right') || el.parentElement;
+    if (!parent) return;
+    var maxW = parent.offsetWidth;
+    if (maxW <= 0) return;
+    var curSize = parseFloat(getComputedStyle(el).fontSize);
+    var tries = 0;
+    while (el.scrollWidth > maxW + 2 && curSize > 8 && tries < 10) {
+      curSize -= 1;
+      el.style.fontSize = curSize + 'px';
+      tries++;
+    }
+  });
+  // 하단바 금액
+  document.querySelectorAll('.parent-bar-val').forEach(function(el) {
+    el.style.fontSize = '';
+    var parent = el.closest('.parent-bar-item');
+    if (!parent) return;
+    var maxW = parent.offsetWidth - 8;
+    if (maxW <= 0) return;
+    var curSize = parseFloat(getComputedStyle(el).fontSize);
+    var tries = 0;
+    while (el.scrollWidth > maxW && curSize > 9 && tries < 10) {
+      curSize -= 1;
+      el.style.fontSize = curSize + 'px';
+      tries++;
+    }
+  });
 }
 
 async function init() {
