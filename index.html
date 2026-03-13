@@ -663,6 +663,7 @@ let editingOrderId = null;
 let selectedPlatform = null;
 let platformSelectTab = 'delivery';
 let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
+let _platformChangeForEdit = null; // 플랫폼 변경 후 수정 모드 복귀용
 
 let settings = {
   addrAutocomplete: true,
@@ -1078,7 +1079,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.0';
+var APP_VERSION = 'v2.2.1';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1939,17 +1940,32 @@ function renderPlatformGrid() {
 
 function switchPlatformTab(tab) { platformSelectTab = tab; renderPlatformGrid(); }
 function changePlatformInEdit() {
-  // 현재 수정 중인 오더 정보 임시 저장 후 플랫폼 선택창 열기
-  var orderId = editingOrderId;
+  // 플랫폼 변경 후 수정 모드 유지를 위해 플래그 저장
+  _platformChangeForEdit = editingOrderId;
   closeSheet();
   setTimeout(function() {
-    editingOrderId = orderId;
     platformSelectTab = 'delivery';
     renderPlatformGrid();
     openSheet('platformSheet');
   }, 200);
 }
-function selectPlatform(pid) { selectedPlatform = pid; closeSheet(); setTimeout(function() { openOrderForm(pid, null); }, 200); }
+function selectPlatform(pid) {
+  selectedPlatform = pid;
+  var pendingEditId = _platformChangeForEdit;
+  _platformChangeForEdit = null;
+  closeSheet();
+  setTimeout(function() {
+    if (pendingEditId !== null) {
+      // 플랫폼 변경 후 수정 모드로 폼 재오픈
+      editingOrderId = pendingEditId;
+      var o = orders.find(function(x) { return x.id === pendingEditId; });
+      if (o) { o.platform = pid; }
+      openOrderForm(pid, pendingEditId);
+    } else {
+      openOrderForm(pid, null);
+    }
+  }, 200);
+}
 
 // ===================== 오더 폼 =====================
 function setOrderType(type) {
