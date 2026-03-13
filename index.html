@@ -584,6 +584,10 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
         <input class="form-input form-input-mono" id="newP_fee" type="number" value="20" placeholder="20">
       </div>
       <div class="form-group">
+        <div class="form-label">프로그램 사용료 (월)</div>
+        <input class="form-input form-input-mono" id="newP_programFee" type="number" value="" placeholder="없으면 비워두세요">
+      </div>
+      <div class="form-group">
         <div class="form-label">업종 선택</div>
         <div style="display:flex;gap:16px;margin-top:6px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
@@ -1037,7 +1041,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v1.8.5';
+var APP_VERSION = 'v1.8.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1082,6 +1086,8 @@ function mainTile(onclick, emoji, label, sub) {
 
 function openJournal(type) {
   journalType = type;
+  // 메인에서 진입 시 이번 달로 리셋
+  homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   showView('home');
 }
 
@@ -1515,7 +1521,8 @@ function renderSettings(c) {
       return platformList.map(function(p,i){
         var dChk = _showD ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('delivery')?'checked':'')+' onchange="togglePlatformType('+i+',\'delivery\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리</label>' : '';
         var tChk = _showT ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('transport')?'checked':'')+' onchange="togglePlatformType('+i+',\'transport\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송</label>' : '';
-        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:8px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
+        var pfee = p.programFee ? '<div style="font-size:11px;color:var(--accent);margin-top:2px;">프로그램 '+Math.round(p.programFee).toLocaleString()+'원/월</div>' : '';
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</div>'+pfee+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:8px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<button onclick="editPlatformFee('+i+')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 6px;">편집</button><label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
       }).join('');
     })()}
     <button onclick="openAddPlatformSheet()" style="background:var(--bg-input);border:1px dashed var(--accent);border-radius:10px;padding:12px;color:var(--accent);font-size:14px;cursor:pointer;width:100%;">+ 플랫폼 추가</button>
@@ -1605,23 +1612,21 @@ function openAddPlatformSheet() {
   var _wt = settings.workType || 'both';
   document.getElementById('newP_name').value='';
   document.getElementById('newP_fee').value='20';
+  document.getElementById('newP_programFee').value='';
   var _dLabel = document.getElementById('newP_delivery').parentElement;
   var _tLabel = document.getElementById('newP_transport').parentElement;
   if (_wt === 'delivery') {
     document.getElementById('newP_delivery').checked=true;
     document.getElementById('newP_transport').checked=false;
-    _dLabel.style.display = '';
-    _tLabel.style.display = 'none';
+    _dLabel.style.display = ''; _tLabel.style.display = 'none';
   } else if (_wt === 'transport') {
     document.getElementById('newP_delivery').checked=false;
     document.getElementById('newP_transport').checked=true;
-    _dLabel.style.display = 'none';
-    _tLabel.style.display = '';
+    _dLabel.style.display = 'none'; _tLabel.style.display = '';
   } else {
     document.getElementById('newP_delivery').checked=true;
     document.getElementById('newP_transport').checked=false;
-    _dLabel.style.display = '';
-    _tLabel.style.display = '';
+    _dLabel.style.display = ''; _tLabel.style.display = '';
   }
   openSheet('addPlatformSheet');
 }
@@ -1633,10 +1638,25 @@ async function addPlatform() {
   if (document.getElementById('newP_transport').checked) types.push('transport');
   if (types.length===0) { alert('대리 또는 탁송을 선택하세요'); return; }
   const feeRate = (parseFloat(document.getElementById('newP_fee').value)||20)/100;
+  const programFee = parseInt(document.getElementById('newP_programFee').value)||0;
   const id = 'custom_'+Date.now();
-  platformList.push({ id, name, types, cls:'custom', feeRate, active:true, builtIn:false });
+  platformList.push({ id, name, types, cls:'custom', feeRate, programFee, active:true, builtIn:false });
   await saveSettings();
   closeSheet();
+  render();
+}
+
+function editPlatformFee(i) {
+  var p = platformList[i];
+  var curFee = Math.round((p.feeRate||0.2)*100);
+  var curPF = p.programFee || 0;
+  var newFee = prompt('수수료 (%) — 현재 ' + curFee + '%', curFee);
+  if (newFee === null) return;
+  var newPF = prompt('프로그램 사용료 (월) — 없으면 0', curPF);
+  if (newPF === null) return;
+  platformList[i].feeRate = (parseFloat(newFee)||20)/100;
+  platformList[i].programFee = parseInt(newPF)||0;
+  saveSettings();
   render();
 }
 
@@ -1720,7 +1740,10 @@ function showPlatformSelect() {
 function renderPlatformGrid() {
   const grid = document.getElementById('platformGrid');
   const wt = settings.workType || 'both';
-  const showTabs = true; // 항상 대리/탁송 탭 표시
+
+  // 업종 설정에 따라 탭 초기값 보정
+  if (wt === 'delivery') platformSelectTab = 'delivery';
+  else if (wt === 'transport') platformSelectTab = 'transport';
 
   const filtered = platformList.filter(function(p) {
     const types = p.types || [p.type || 'delivery'];
@@ -1728,7 +1751,7 @@ function renderPlatformGrid() {
   });
 
   let tabsHTML = '';
-  if (showTabs) {
+  if (wt === 'both') {
     tabsHTML =
       '<div style="display:flex;gap:8px;margin-bottom:20px;">' +
       '<button onclick="switchPlatformTab(\'delivery\')" style="flex:1;padding:14px 0;font-size:15px;font-weight:700;border-radius:12px;border:none;cursor:pointer;' +
@@ -1737,6 +1760,14 @@ function renderPlatformGrid() {
       '<button onclick="switchPlatformTab(\'transport\')" style="flex:1;padding:14px 0;font-size:15px;font-weight:700;border-radius:12px;border:none;cursor:pointer;' +
         'background:' + (platformSelectTab==='transport' ? 'var(--accent)' : 'var(--bg-input)') + ';' +
         'color:' + (platformSelectTab==='transport' ? '#fff' : 'var(--text-muted)') + ';">🚚 탁송</button>' +
+      '</div>';
+  } else {
+    // 단일 업종: 탭 숨기고 안내 문구
+    var _wtLabel = wt === 'delivery' ? '🚗 대리운전' : '🚚 로드탁송';
+    tabsHTML =
+      '<div style="margin-bottom:16px;padding:16px 18px;background:var(--bg-input);border:1.5px solid var(--accent);border-radius:14px;text-align:center;">' +
+      '<div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">' + _wtLabel + '</div>' +
+      '<div onclick="openSettings()" style="display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⚙️ 업종 변경</div>' +
       '</div>';
   }
 
