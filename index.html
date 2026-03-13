@@ -969,6 +969,11 @@ function openSettings() {
 }
 
 function showView(v, skipHistory) {
+  // home 진입 시 오늘 달로 초기화 (journal에서 넘어오는 경우 제외)
+  if (v === 'home' && currentView !== 'journal') {
+    homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    journalDate = new Date();
+  }
   currentView = v;
 
   // Android 뒤로가기용 history 스택 관리
