@@ -1049,8 +1049,8 @@ function updateParentBar() {
   let cnt, inc, exp, net;
 
   if (isMonthly) {
-    // 월 기준
-    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    // 월 기준 - homeMonth 사용
+    const y = homeMonth.getFullYear(), m = homeMonth.getMonth();
     const monthOrders = orders.filter(o => {
       const d = new Date(o.date);
       return d.getFullYear()===y && d.getMonth()===m;
@@ -1063,14 +1063,18 @@ function updateParentBar() {
     if (lbNet)   lbNet.textContent   = (m+1) + '월 순수입';
   } else {
     // 일 기준 (journal)
-    const today = dateStr(journalDate || currentDate);
+    const jd = journalDate || currentDate;
+    const today = dateStr(jd);
     const dayOrders = orders.filter(o=>o.date===today);
     cnt = dayOrders.length;
     inc = dayOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
     exp = dayOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
     net = inc - exp;
-    if (lbCount) lbCount.textContent = '오늘 건수';
-    if (lbNet)   lbNet.textContent   = '오늘 순수입';
+    const todayStr = dateStr(currentDate);
+    const isToday = (today === todayStr);
+    const dayLabel = isToday ? '오늘' : (jd.getMonth()+1) + '/' + jd.getDate();
+    if (lbCount) lbCount.textContent = dayLabel + ' 건수';
+    if (lbNet)   lbNet.textContent   = dayLabel + ' 순수입';
   }
 
   pbCount.textContent = cnt + '건';
@@ -1331,6 +1335,7 @@ function changeHomeYear(d) {
 function goToDate(ds) {
   journalDate = new Date(ds+'T00:00:00');
   showView('journal');
+  updateParentBar();
 }
 
 // --- 일지 ---
@@ -1369,6 +1374,7 @@ function changeJournalDate(d) {
   journalDate.setDate(journalDate.getDate()+d);
   updateHeader();
   render();
+  updateParentBar();
 }
 
 // --- 결산 ---
