@@ -522,6 +522,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
     <div class="sheet-header">
       <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
         <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
+        <div id="orderSheetPlatformChange" style="display:none;margin-top:6px;">
+          <button onclick="changePlatformInEdit()" style="font-size:12px;color:var(--accent);background:var(--bg-input);border:1px solid var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;">🔄 플랫폼 변경</button>
+        </div>
         <div style="display:flex;gap:6px;" id="orderTypeToggle">
           <button id="orderTypeDelivery" onclick="setOrderType('delivery')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚗 대리운전</button>
           <button id="orderTypeTransport" onclick="setOrderType('transport')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚚 로드탁송</button>
@@ -638,12 +641,23 @@ function P(id) {
   return { ...p, type: p.types&&p.types.includes('transport')&&!p.types.includes('delivery') ? 'transport' : 'delivery' };
 }
 
+// 오전 8시 기준 실제 작업일 반환 (00:00~07:59는 전날로 처리)
+function workDate() {
+  var now = new Date();
+  if (now.getHours() < 8) {
+    var prev = new Date(now);
+    prev.setDate(prev.getDate() - 1);
+    return prev;
+  }
+  return now;
+}
+
 let orders = [];
 let addrHistory = [];
 let journalType = 'delivery';
 let settingsFrom = 'main'; // 설정 진입 전 뷰
-let journalDate = new Date();
-let currentDate = new Date();
+let journalDate = workDate();
+let currentDate = workDate();
 let monthlyDate = new Date();
 let editingOrderId = null;
 let selectedPlatform = null;
@@ -942,6 +956,10 @@ function showView(v, skipHistory) {
     pb.style.display = 'none';
   }
 
+  if (v === 'monthly') {
+    monthlyDate = new Date();
+    statsYear = new Date().getFullYear();
+  }
   updateHeader();
   render();
 }
@@ -1060,7 +1078,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.1.8';
+var APP_VERSION = 'v2.2.0';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1106,12 +1124,12 @@ function mainTile(onclick, emoji, label, sub) {
 function openJournal(type) {
   journalType = type;
   // 메인에서 진입 시 이번 달로 리셋
-  homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  homeMonth = new Date(workDate().getFullYear(), workDate().getMonth(), 1);
   showView('home');
 }
 
 // --- 홈 ---
-let homeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let homeMonth = new Date(workDate().getFullYear(), workDate().getMonth(), 1);
 
 function renderHome(c) {
   const year = homeMonth.getFullYear();
@@ -1434,6 +1452,15 @@ function tabBar() {
     '</div>';
 }
 function switchMonthlyTab(tab) { monthlyTab = tab; render(); }
+function bindMonthlySwipe(c) {
+  bindSwipe(c, function(dir) {
+    if (monthlyTab === 'stats') {
+      statsYear += (dir === 'left' ? 1 : -1);
+    } else {
+      changeMonthlyDate(dir === 'left' ? 1 : -1);
+    }
+  });
+}
 
 function renderStats(c) {
   const fixedTotal = settings.fixedExpenses.filter(f=>f.active&&f.amount>0).reduce((s,f)=>s+(f.amount||0),0);
@@ -1523,6 +1550,7 @@ function renderStats(c) {
     nav + tabBar() + statsToggleRow + legend +
     '<div>' + totalBox + listHtml + '</div>' +
     '</div>';
+  bindMonthlySwipe(c);
 }
 
 function changeStatsYear(d) { statsYear += d; render(); }
@@ -1674,7 +1702,7 @@ async function togglePlatformType(i, type, val) {
   await saveSettings();
 }
 async function deletePlatform(i) {
-  if (!confirm(`'${platformList[i].name}' 플랫폼을 삭제할까요?`)) return;
+  showToast(platformList[i].name + ' 플랫폼 삭제 중...', 1000);
   platformList.splice(i,1);
   await saveSettings();
   render();
@@ -1769,7 +1797,7 @@ async function toggleAutocomplete(val) {
 }
 
 async function clearAddrHistory() {
-  if (!confirm('주소 히스토리를 모두 삭제할까요?')) return;
+  showToast('주소 히스토리 삭제 중...', 1000);
   const tx = db.transaction('addrHistory','readwrite');
   tx.objectStore('addrHistory').clear();
   addrHistory = [];
@@ -1849,6 +1877,7 @@ function renderPlatformGrid() {
   else if (wt === 'transport') platformSelectTab = 'transport';
 
   const filtered = platformList.filter(function(p) {
+    if (p.id === 'unknown') return false;
     const types = p.types || [p.type || 'delivery'];
     return p.active !== false && types.includes(platformSelectTab);
   });
@@ -1909,6 +1938,17 @@ function renderPlatformGrid() {
 }
 
 function switchPlatformTab(tab) { platformSelectTab = tab; renderPlatformGrid(); }
+function changePlatformInEdit() {
+  // 현재 수정 중인 오더 정보 임시 저장 후 플랫폼 선택창 열기
+  var orderId = editingOrderId;
+  closeSheet();
+  setTimeout(function() {
+    editingOrderId = orderId;
+    platformSelectTab = 'delivery';
+    renderPlatformGrid();
+    openSheet('platformSheet');
+  }, 200);
+}
 function selectPlatform(pid) { selectedPlatform = pid; closeSheet(); setTimeout(function() { openOrderForm(pid, null); }, 200); }
 
 // ===================== 오더 폼 =====================
@@ -1945,12 +1985,21 @@ function setOrderType(type) {
 }
 
 function openOrderForm(pid, orderId) {
-  const p = PLATFORMS[pid];
+  const p = PLATFORMS[pid] || { feeRate: 0.2, type: 'delivery', name: pid };
   editingOrderId = orderId;
   const isEdit = orderId !== null;
   let o = isEdit ? orders.find(x=>x.id===orderId) : null;
 
   document.getElementById('orderSheetTitle').textContent = isEdit ? '오더 수정' : '오더 추가';
+  // unknown 플랫폼 수정 시: 플랫폼 변경 링크 표시
+  var _platformChangeBtn = document.getElementById('orderSheetPlatformChange');
+  if (_platformChangeBtn) {
+    if (isEdit && pid === 'unknown') {
+      _platformChangeBtn.style.display = 'block';
+    } else {
+      _platformChangeBtn.style.display = 'none';
+    }
+  }
   // 대리/탁송 토글 - 플랫폼 타입에 맞게 초기 선택
   // setOrderType은 openSheet 직후에 호출 (아래)
   document.getElementById('orderSubmitBtn').textContent = isEdit ? '수 정' : '추 가';
@@ -2121,8 +2170,11 @@ function transportItemHTML(t, i) {
   return '<div id="tr_' + i + '" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">' +
     '<select id="tr_type_' + i + '" style="flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text-primary);font-size:13px;">' +
     '<option ' + (t.type==='버스'?'selected':'') + '>버스</option>' +
+    '<option ' + (t.type==='시외버스'?'selected':'') + '>시외버스</option>' +
+    '<option ' + (t.type==='고속버스'?'selected':'') + '>고속버스</option>' +
     '<option ' + (t.type==='지하철'?'selected':'') + '>지하철</option>' +
     '<option ' + (t.type==='택시'?'selected':'') + '>택시</option>' +
+    '<option ' + (t.type==='카바차'?'selected':'') + '>카바차</option>' +
     '<option ' + (t.type==='기타'?'selected':'') + '>기타</option>' +
     '</select>' +
     '<input id="tr_amt_' + i + '" type="number" class="form-input form-input-mono" style="width:90px;flex-shrink:0;" placeholder="0" value="' + (t.amount||'') + '" oninput="updateCalc()">' +
@@ -2346,7 +2398,7 @@ async function submitOrder() {
   history.back();
 }
 async function deleteOrder(id) {
-  if (!confirm('이 오더를 삭제할까요?')) return;
+  showToast('오더 삭제 중...', 1000);
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
   document.getElementById('overlay').classList.remove('show');
