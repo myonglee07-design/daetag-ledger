@@ -618,6 +618,7 @@ const DEFAULT_PLATFORMS = [
   { id:'logi2', name:'로지2',           types:['transport'], cls:'logi2', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
   { id:'icon',  name:'아이콘',    types:['transport'], cls:'icon',  feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
   { id:'icon2', name:'콜마너1',   types:['transport'], cls:'icon2', feeRate:0.2, monthlyFee:15000, builtIn:true, active:true },
+  { id:'unknown', name:'앱 미지정', types:['delivery','transport'], cls:'', feeRate:0.2, builtIn:true, active:true },
 ];
 let platformList = DEFAULT_PLATFORMS.map(p=>({...p}));
 
@@ -1059,7 +1060,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.1.3';
+var APP_VERSION = 'v2.1.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1543,6 +1544,12 @@ function renderBackup(c) {
     <button class="btn-secondary" onclick="document.getElementById('importInput2').click()">📥 대리가계부 DB 가져오기 (ZIP)</button>
     <input type="file" id="importInput2" accept=".zip,.db" style="display:none" onchange="importLegacyDB(this)">
     <div style="font-size:12px;color:var(--text-muted);padding:4px 2px;">기존 대리가계부 앱의 백업 ZIP 파일을 선택하면 자동으로 변환합니다.</div>
+  </div>
+
+  <div class="section-label" style="color:var(--expense);">위험 구역</div>
+  <div style="margin-bottom:32px;">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">비밀번호: <b>0000</b> · 모든 콜 데이터와 설정이 삭제됩니다</div>
+    <button class="btn-secondary" style="border-color:var(--expense);color:var(--expense);width:100%;" onclick="resetAppConfirm()">⚠️ 완전 초기화</button>
   </div>
   </div>
   `;
@@ -2592,7 +2599,7 @@ async function loadSqlJs(dbBuffer) {
       remark: remark||'',
     });
   }
-  if (!confirm(converted.length + '건의 콜 데이터를 가져옵니다.\n기존 데이터에 추가됩니다. 계속할까요?')) return;
+  showToast(converted.length + '건 변환 완료 — 저장 중...', 3000);
   showToast('가져오기 중... (0/' + converted.length + ')', 30000);
   var BATCH = 500;
   for (var i = 0; i < converted.length; i += BATCH) {
