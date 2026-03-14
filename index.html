@@ -1081,7 +1081,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.9';
+var APP_VERSION = 'v2.2.10';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1258,7 +1258,7 @@ function renderHome(c) {
 
   // ④ 스와이프로 전월/다음달 이동
   bindSwipe(document.getElementById('homeSwipeArea'), function(dir) {
-    changeHomeMonth(dir === 'left' ? 1 : -1);
+    changeHomeMonth(dir === 'left' ? -1 : 1);
   });
 
   // ⑤ 금액 자동축소
@@ -1321,7 +1321,7 @@ function renderJournal(c) {
 
   // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
-    changeJournalDate(dir === 'left' ? 1 : -1);
+    changeJournalDate(dir === 'left' ? -1 : 1);
   });
 }
 
@@ -1455,6 +1455,7 @@ function renderMonthly(c) {
     '<div style="padding-bottom:40px;">' +
     summary + toggleRow + fixedEditBtn + fixedHtml + finalBox + platformHtml +
     '</div></div>';
+  bindMonthlySwipe(c);
 }
 
 function tabBar() {
@@ -1468,7 +1469,7 @@ function bindMonthlySwipe(c) {
   if (monthlyTab === 'stats') return;
   const area = c.querySelector('div');
   if (area) bindSwipe(area, function(dir) {
-    changeMonthlyDate(dir === 'left' ? 1 : -1);
+    changeMonthlyDate(dir === 'left' ? -1 : 1);
   });
 }
 
