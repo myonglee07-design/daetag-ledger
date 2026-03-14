@@ -33,10 +33,10 @@
   --expense-dim: rgba(239,68,68,0.12);
   --kakao: #FEE500;
   --tmap: #0064FF;
-  --daegu: #6366f1;
+  --daegu: #a855f7;
   --super: #ec4899;
   --logi: #14b8a6;
-  --icon: #f59e0b;
+  --icon: #22c55e;
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -86,7 +86,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 
 /* 스크롤 영역 */
-.content { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; touch-action: pan-y; }
+.content { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; touch-action: pan-y; will-change: contents; }
 .content::-webkit-scrollbar { display: none; }
 
 /* 하단 고정 실수입 바 */
@@ -197,10 +197,10 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item.icon::before, .order-item.icon2::before { background: var(--icon); }
 .order-item.kakao { background: linear-gradient(135deg, rgba(254,229,0,0.08) 0%, var(--bg-card) 60%); }
 .order-item.tmap { background: linear-gradient(135deg, rgba(0,100,255,0.10) 0%, var(--bg-card) 60%); }
-.order-item.daegu { background: linear-gradient(135deg, rgba(99,102,241,0.10) 0%, var(--bg-card) 60%); }
+.order-item.daegu { background: linear-gradient(135deg, rgba(168,85,247,0.10) 0%, var(--bg-card) 60%); }
 .order-item.super { background: linear-gradient(135deg, rgba(236,72,153,0.10) 0%, var(--bg-card) 60%); }
 .order-item.logi1, .order-item.logi2 { background: linear-gradient(135deg, rgba(20,184,166,0.10) 0%, var(--bg-card) 60%); }
-.order-item.icon, .order-item.icon2 { background: linear-gradient(135deg, rgba(245,158,11,0.10) 0%, var(--bg-card) 60%); }
+.order-item.icon, .order-item.icon2 { background: linear-gradient(135deg, rgba(34,197,94,0.10) 0%, var(--bg-card) 60%); }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .order-type-badge { font-size: 10px; font-weight: 600; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
@@ -1077,31 +1077,30 @@ function updateParentBar() {
 function refreshAfterSheetClose() {
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  // 시트 닫힘 애니메이션(0.3s) 이후 렌더 + GPU 레이어 리페인트
   setTimeout(function() {
     render();
     updateParentBar();
-    var c = document.getElementById('mainContent');
-    if (c) {
-      c.style.transform = 'translateZ(1px)';
-      void c.offsetHeight;
-      c.style.transform = '';
-    }
   }, 350);
 }
 function render() {
   const c = document.getElementById('mainContent');
-  c.innerHTML = '';
+  if (!c) return;
+  // innerHTML = '' 제거: 각 renderXxx가 이미 통째로 교체함
+  // 비우는 순간 flex 높이 0 → WebView GPU 레이어 커밋 → paint 누락 원인
   if (currentView==='main') renderMain(c);
   else if (currentView==='home') renderHome(c);
   else if (currentView==='journal') renderJournal(c);
   else if (currentView==='monthly') renderMonthly(c);
   else if (currentView==='settings') renderSettings(c);
   else if (currentView==='backup') renderBackup(c);
+  // 강제 reflow: WebView가 새 콘텐츠를 반드시 paint 하도록
+  void c.offsetHeight;
 }
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.17';
+var APP_VERSION = 'v2.2.18';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1259,7 +1258,7 @@ function renderHome(c) {
     '</div>';
 
   c.innerHTML =
-    '<div id="homeSwipeArea">' +
+    '<div id="homeSwipeArea" style="touch-action:pan-y;">' +
     '<div style="position:sticky;top:0;z-index:5;background:var(--bg-primary);">' + nav + '</div>' +
     '<div id="dayScrollArea">' +
     '<div class="day-list">' + dayRows + '</div>' +
@@ -1342,7 +1341,7 @@ function renderJournal(c) {
     ? '<div style="padding:8px 16px 0;"><button onclick="journalDate=workDate();updateHeader();render();updateParentBar();" style="background:var(--accent);border:none;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;cursor:pointer;">오늘로</button></div>'
     : '';
 
-  c.innerHTML = '<div id="journalSwipeArea" style="min-height:calc(100vh - 120px);">' + todayBtn + itemsHtml + '</div>';
+  c.innerHTML = '<div id="journalSwipeArea" style="min-height:calc(100vh - 120px);touch-action:pan-y;">' + todayBtn + itemsHtml + '</div>';
 
   // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
