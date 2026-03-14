@@ -86,7 +86,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 
 /* 스크롤 영역 */
-.content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; }
+.content { flex: 1 0 auto; min-height: 1px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; will-change: transform; transform: translateZ(0); backface-visibility: hidden; }
 .content::-webkit-scrollbar { display: none; }
 
 /* 하단 고정 실수입 바 */
@@ -1074,6 +1074,20 @@ function updateParentBar() {
 }
 
 // ===================== 렌더링 =====================
+function refreshAfterSheetClose() {
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  setTimeout(function() {
+    render();
+    updateParentBar();
+    var c = document.getElementById('mainContent');
+    if (c) {
+      c.style.transform = 'translateZ(1px)';
+      void c.offsetHeight;
+      c.style.transform = '';
+    }
+  }, 350);
+}
 function render() {
   const c = document.getElementById('mainContent');
   c.innerHTML = '';
@@ -1087,7 +1101,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.13';
+var APP_VERSION = 'v2.2.14';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2428,21 +2442,14 @@ async function submitOrder() {
   if (obj.endAddr) await saveAddrHistory(obj.endAddr);
   for (const v of (obj.visitAddrs||[])) await saveAddrHistory(v);
   // 시트 UI 닫기
-  document.getElementById('overlay').classList.remove('show');
-  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
-  // history.back() 후 popstate에서 render (WebView 스크롤 꼬임 방지)
-  _sheetHistoryPending = true;
-  history.back();
+  refreshAfterSheetClose();
 }
 async function deleteOrder(id) {
   showToast('오더 삭제 중...', 1000);
   await dbDelete('orders', id);
   orders = orders.filter(x=>x.id!==id);
-  document.getElementById('overlay').classList.remove('show');
-  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
   showToast('삭제되었습니다');
-  _sheetHistoryPending = true;
-  history.back();
+  refreshAfterSheetClose();
 }
 function editOrder(id) {
   const o = orders.find(x=>x.id===id);
@@ -2455,16 +2462,10 @@ function editOrder(id) {
 function openSheet(id) {
   document.getElementById('overlay').classList.add('show');
   document.getElementById(id).classList.add('show');
-  // Android 뒤로가기 대응: 시트 열릴 때 history 스택에 push
-  history.pushState({ sheet: id, view: currentView }, '');
 }
 function closeSheet() {
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
-  // 코드에서 닫을 때: history.back()으로 sheet state 제거
-  // popstate에서 _sheetHistoryPending 감지 후 뷰 전환 없이 패스
-  _sheetHistoryPending = true;
-  history.back();
 }
 
 // ===================== 고정 지출 =====================
@@ -2758,16 +2759,7 @@ async function resetAllData() {
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
-  // [1] 코드에서 closeSheet() 호출로 발생한 history.back() → 뷰 전환 없이 패스
-  // render() 재호출: Capacitor WebView에서 history.back() 후 mainContent 공백 방지
-  if (_sheetHistoryPending) {
-    _sheetHistoryPending = false;
-    // history.back() 완료 후 렌더 (WebView navigation 완전히 끝난 뒤)
-    setTimeout(function() { render(); updateParentBar(); }, 60);
-    return;
-  }
-
-  // [2] Android 뒤로가기: 열린 바텀시트가 있으면 닫기만 하고 종료
+  // [1] Android 뒤로가기: 열린 바텀시트가 있으면 닫기만 하고 종료
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
     document.getElementById('overlay').classList.remove('show');
@@ -2775,7 +2767,7 @@ window.addEventListener('popstate', function(e) {
     return;
   }
 
-  // [3] 뷰 전환 로직 (기존)
+  // [2] 뷰 전환 로직 (기존)
   const state = e.state;
   if (!state || state.view === 'main') {
     // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
