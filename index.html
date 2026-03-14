@@ -1081,7 +1081,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.2';
+var APP_VERSION = 'v2.2.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1266,6 +1266,9 @@ function renderHome(c) {
 }
 
 function changeHomeMonth(d) {
+  if (changeHomeMonth._lock) return;
+  changeHomeMonth._lock = true;
+  setTimeout(function() { changeHomeMonth._lock = false; }, 400);
   homeMonth = new Date(homeMonth.getFullYear(), homeMonth.getMonth()+d, 1);
   updateParentBar();
   render();
@@ -1314,15 +1317,18 @@ function renderJournal(c) {
     }
   }
 
-  c.innerHTML = '<div id="journalSwipeArea">' + itemsHtml + '</div>';
+  c.innerHTML = '<div id="journalSwipeArea" style="min-height:calc(100vh - 120px);">' + itemsHtml + '</div>';
 
-  // ③ 스와이프로 전날/다음날 이동
+  // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
     changeJournalDate(dir === 'left' ? 1 : -1);
   });
 }
 
 function changeJournalDate(d) {
+  if (changeJournalDate._lock) return;
+  changeJournalDate._lock = true;
+  setTimeout(function() { changeJournalDate._lock = false; }, 400);
   journalDate = new Date(journalDate);
   journalDate.setDate(journalDate.getDate()+d);
   updateHeader();
@@ -1457,7 +1463,8 @@ function tabBar() {
 }
 function switchMonthlyTab(tab) { monthlyTab = tab; render(); }
 function bindMonthlySwipe(c) {
-  bindSwipe(c, function(dir) {
+  const area = c.querySelector('div');
+  if (area) bindSwipe(area, function(dir) {
     if (monthlyTab === 'stats') {
       statsYear += (dir === 'left' ? 1 : -1);
     } else {
@@ -1559,7 +1566,7 @@ function renderStats(c) {
 
 function changeStatsYear(d) { statsYear += d; render(); }
 function jumpToMonth(m) { monthlyDate = new Date(statsYear, m-1, 1); monthlyTab = 'settlement'; updateHeader(); render(); }
-function changeMonthlyDate(d) { monthlyDate = new Date(monthlyDate.getFullYear(), monthlyDate.getMonth()+d, 1); updateHeader(); render(); updateParentBar(); }
+function changeMonthlyDate(d) { if (changeMonthlyDate._lock) return; changeMonthlyDate._lock = true; setTimeout(function(){changeMonthlyDate._lock=false;},400); monthlyDate = new Date(monthlyDate.getFullYear(), monthlyDate.getMonth()+d, 1); updateHeader(); render(); updateParentBar(); }
 function changeMonthlyYear(d) { monthlyDate = new Date(monthlyDate.getFullYear()+d, monthlyDate.getMonth(), 1); updateHeader(); render(); updateParentBar(); }
 
 // --- 백업 ---
