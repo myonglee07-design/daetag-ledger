@@ -672,7 +672,7 @@ let monthlyDate = new Date();
 let editingOrderId = null;
 let selectedPlatform = null;
 let platformSelectTab = 'delivery';
-let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
+let _sheetHistoryPending = false;
 let _selectMode = false;
 let _selectedIds = [];
 let _bulkPlatformMode = false;
@@ -1108,7 +1108,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.5';
+var APP_VERSION = 'v2.3.6';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1367,6 +1367,7 @@ function renderJournal(c) {
   var _lpTimer = null;
   if (_area) {
     _area.addEventListener('touchstart', function(e) {
+      if (e.touches.length > 1) return;
       var item = e.target.closest('.order-item');
       if (!item) return;
       var id = parseInt(item.dataset.oid);
@@ -2987,6 +2988,22 @@ document.addEventListener('backbutton', function(e) {
 
 </script>
 
+
+<script>
+// 핀치줌(두 손가락 확대/축소) 완전 차단
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+var _lastTap = 0;
+document.addEventListener('touchend', function(e) {
+  var now = Date.now();
+  if (now - _lastTap < 300) e.preventDefault();
+  _lastTap = now;
+}, { passive: false });
+</script>
 
 <script>
 if ('serviceWorker' in navigator && !location.hostname.includes('claudeusercontent')) {
