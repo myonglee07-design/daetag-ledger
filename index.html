@@ -64,7 +64,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-size: clamp(14px, 3.8vw, 17px); }
 html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR',sans-serif; overflow: hidden; }
-#app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+#app { height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
 
 /* 상단 헤더 */
 .header {
@@ -509,115 +509,115 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
     <svg fill="none" stroke="white" viewBox="0 0 24 24" width="26" height="26"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
   </button>
 
-  <!-- 오버레이 -->
-  <div class="overlay" id="overlay" onclick="closeSheet()"></div>
+</div>
 
-  <!-- 플랫폼 선택 바텀시트 -->
-  <div class="bottom-sheet" id="platformSheet" style="max-height:95vh;">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div class="sheet-title">플랫폼 선택</div>
-      <button class="btn-icon" onclick="closeSheet()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body" style="padding:16px;overflow-y:auto;">
-      <div id="platformGrid"></div>
-    </div>
+<!-- 오버레이 + 바텀시트: #app 밖 (flex 레이아웃 영향 제거) -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+<!-- 플랫폼 선택 바텀시트 -->
+<div class="bottom-sheet" id="platformSheet" style="max-height:95vh;">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">플랫폼 선택</div>
+    <button class="btn-icon" onclick="closeSheet()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
   </div>
-
-  <!-- 오더 입력 바텀시트 -->
-  <div class="bottom-sheet" id="orderSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
-        <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
-        <div id="orderSheetPlatformChange" style="display:none;margin-top:6px;">
-          <button onclick="changePlatformInEdit()" style="font-size:12px;color:var(--accent);background:var(--bg-input);border:1px solid var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;">🔄 플랫폼 변경</button>
-        </div>
-        <div style="display:flex;gap:6px;" id="orderTypeToggle">
-          <button id="orderTypeDelivery" onclick="setOrderType('delivery')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚗 대리운전</button>
-          <button id="orderTypeTransport" onclick="setOrderType('transport')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚚 로드탁송</button>
-        </div>
-      </div>
-      <button class="btn-icon" onclick="closeSheet()" style="align-self:flex-start;margin-top:2px;">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body" id="orderFormBody"></div>
-    <div class="sheet-footer">
-      <button class="btn-secondary" style="flex:1" onclick="closeSheet()">취소</button>
-      <button class="btn-primary" style="flex:2" id="orderSubmitBtn" onclick="submitOrder()">추 가</button>
-    </div>
+  <div class="sheet-body" style="padding:16px;overflow-y:auto;">
+    <div id="platformGrid"></div>
   </div>
+</div>
 
-  <!-- 고정지출 설정 바텀시트 -->
-  <div class="bottom-sheet" id="fixedSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div class="sheet-title">고정 지출 관리</div>
-      <button class="btn-icon" onclick="closeSheet()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body" id="fixedSheetBody"></div>
-    <div class="sheet-footer">
-      <button class="btn-primary" onclick="saveFixedExpenses()">저장</button>
-    </div>
-  </div>
-
-  <!-- 업종 변경 바텀시트 -->
-  <div class="bottom-sheet" id="workTypeSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div class="sheet-title">업종 변경</div>
-      <button class="btn-icon" onclick="closeSheet()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body" id="workTypeSheetBody" style="padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
-  </div>
-
-  <!-- 플랫폼 추가 바텀시트 -->
-  <div class="bottom-sheet" id="addPlatformSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div class="sheet-title">플랫폼 추가</div>
-      <button class="btn-icon" onclick="closeSheet()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body" style="padding:16px;display:flex;flex-direction:column;gap:14px;">
-      <div class="form-group">
-        <div class="form-label">플랫폼 이름</div>
-        <input class="form-input" id="newP_name" placeholder="예: 카카오탁송">
+<!-- 오더 입력 바텀시트 -->
+<div class="bottom-sheet" id="orderSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+      <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
+      <div id="orderSheetPlatformChange" style="display:none;margin-top:6px;">
+        <button onclick="changePlatformInEdit()" style="font-size:12px;color:var(--accent);background:var(--bg-input);border:1px solid var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;">🔄 플랫폼 변경</button>
       </div>
-      <div class="form-group">
-        <div class="form-label">수수료 (%)</div>
-        <input class="form-input form-input-mono" id="newP_fee" type="number" value="20" placeholder="20">
-      </div>
-      <div class="form-group">
-        <div class="form-label">프로그램 사용료 (월)</div>
-        <input class="form-input form-input-mono" id="newP_programFee" type="number" value="" placeholder="없으면 비워두세요">
-      </div>
-      <div class="form-group">
-        <div class="form-label">업종 선택</div>
-        <div style="display:flex;gap:16px;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
-            <input type="checkbox" id="newP_delivery" style="accent-color:var(--accent);width:18px;height:18px;"> 대리
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
-            <input type="checkbox" id="newP_transport" style="accent-color:var(--accent);width:18px;height:18px;"> 탁송
-          </label>
-        </div>
+      <div style="display:flex;gap:6px;" id="orderTypeToggle">
+        <button id="orderTypeDelivery" onclick="setOrderType('delivery')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚗 대리운전</button>
+        <button id="orderTypeTransport" onclick="setOrderType('transport')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚚 로드탁송</button>
       </div>
     </div>
-    <div class="sheet-footer">
-      <button class="btn-secondary" style="flex:1" onclick="closeSheet()">취소</button>
-      <button class="btn-primary" style="flex:2" onclick="addPlatform()">추 가</button>
+    <button class="btn-icon" onclick="closeSheet()" style="align-self:flex-start;margin-top:2px;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="orderFormBody"></div>
+  <div class="sheet-footer">
+    <button class="btn-secondary" style="flex:1" onclick="closeSheet()">취소</button>
+    <button class="btn-primary" style="flex:2" id="orderSubmitBtn" onclick="submitOrder()">추 가</button>
+  </div>
+</div>
+
+<!-- 고정지출 설정 바텀시트 -->
+<div class="bottom-sheet" id="fixedSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">고정 지출 관리</div>
+    <button class="btn-icon" onclick="closeSheet()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="fixedSheetBody"></div>
+  <div class="sheet-footer">
+    <button class="btn-primary" onclick="saveFixedExpenses()">저장</button>
+  </div>
+</div>
+
+<!-- 업종 변경 바텀시트 -->
+<div class="bottom-sheet" id="workTypeSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">업종 변경</div>
+    <button class="btn-icon" onclick="closeSheet()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="workTypeSheetBody" style="padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+
+<!-- 플랫폼 추가 바텀시트 -->
+<div class="bottom-sheet" id="addPlatformSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">플랫폼 추가</div>
+    <button class="btn-icon" onclick="closeSheet()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" style="padding:16px;display:flex;flex-direction:column;gap:14px;">
+    <div class="form-group">
+      <div class="form-label">플랫폼 이름</div>
+      <input class="form-input" id="newP_name" placeholder="예: 카카오탁송">
+    </div>
+    <div class="form-group">
+      <div class="form-label">수수료 (%)</div>
+      <input class="form-input form-input-mono" id="newP_fee" type="number" value="20" placeholder="20">
+    </div>
+    <div class="form-group">
+      <div class="form-label">프로그램 사용료 (월)</div>
+      <input class="form-input form-input-mono" id="newP_programFee" type="number" value="" placeholder="없으면 비워두세요">
+    </div>
+    <div class="form-group">
+      <div class="form-label">업종 선택</div>
+      <div style="display:flex;gap:16px;margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="newP_delivery" style="accent-color:var(--accent);width:18px;height:18px;"> 대리
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="newP_transport" style="accent-color:var(--accent);width:18px;height:18px;"> 탁송
+        </label>
+      </div>
     </div>
   </div>
-
+  <div class="sheet-footer">
+    <button class="btn-secondary" style="flex:1" onclick="closeSheet()">취소</button>
+    <button class="btn-primary" style="flex:2" onclick="addPlatform()">추 가</button>
+  </div>
 </div>
 
 <script>
@@ -1132,7 +1132,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.25-diag';
+var APP_VERSION = 'v2.2.26-diag';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
