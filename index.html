@@ -1101,30 +1101,11 @@ function render() {
   else if (currentView==='monthly') renderMonthly(c);
   else if (currentView==='settings') renderSettings(c);
   else if (currentView==='backup') renderBackup(c);
-
-  // 진단 (백지 원인 확인용 — 해결 후 제거)
-  var rect = c.getBoundingClientRect();
-  var appRect = document.getElementById('app').getBoundingClientRect();
-  var dbg = document.getElementById('_dbg');
-  if (!dbg) {
-    dbg = document.createElement('div');
-    dbg.id = '_dbg';
-    dbg.style.cssText = 'position:fixed;top:60px;left:4px;right:4px;z-index:9999;font-size:10px;background:rgba(0,0,0,0.85);color:#0f0;padding:6px 8px;border-radius:6px;pointer-events:none;font-family:monospace;white-space:pre-wrap;line-height:1.4;';
-    document.body.appendChild(dbg);
-  }
-  dbg.textContent = '[render] view=' + currentView + ' ch=' + c.children.length + ' sH=' + c.scrollHeight + ' rH=' + Math.round(rect.height) + '\n[app] aH=' + Math.round(appRect.height) + ' innerH=' + window.innerHeight;
-  setTimeout(function() {
-    var c2 = document.getElementById('mainContent');
-    if (!c2 || !dbg) return;
-    var r2 = c2.getBoundingClientRect();
-    var a2 = document.getElementById('app').getBoundingClientRect();
-    dbg.textContent += '\n[300ms후] rH=' + Math.round(r2.height) + ' aH=' + Math.round(a2.height) + ' innerH=' + window.innerHeight;
-  }, 300);
 }
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.29-diag';
+var APP_VERSION = 'v2.3.0';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
