@@ -673,9 +673,9 @@ let editingOrderId = null;
 let selectedPlatform = null;
 let platformSelectTab = 'delivery';
 let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
-let _selectMode = false;    // 일지 롱프레스 선택 모드
-let _selectedIds = [];      // 선택된 오더 id 배열
-let _bulkPlatformMode = false; // 일괄 플랫폼 변경 모드
+let _selectMode = false;
+let _selectedIds = [];
+let _bulkPlatformMode = false;
 let _platformChangeForEdit = null; // 플랫폼 변경 후 수정 모드 복귀용
 
 let settings = {
@@ -1108,7 +1108,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.1';
+var APP_VERSION = 'v2.3.2';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1359,12 +1359,11 @@ function renderJournal(c) {
 
   c.innerHTML = '<div id="journalSwipeArea" style="min-height:calc(100vh - 120px);touch-action:pan-y;">' + todayBtn + itemsHtml + '</div>';
 
-  // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
     changeJournalDate(dir === 'left' ? 1 : -1);
   });
 
-  // ④ 롱프레스 선택 모드 바인딩
+  // 롱프레스 선택 모드
   var _area = document.getElementById('journalSwipeArea');
   var _lpTimer = null;
   if (_area) {
@@ -1383,17 +1382,20 @@ function renderJournal(c) {
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
   }
 
-  // ⑤ 선택 모드 하단 바
+  // 선택 모드 하단 바
   var oldBar = document.getElementById('selectModeBar');
   if (oldBar) oldBar.remove();
   if (_selectMode) {
     var bar = document.createElement('div');
     bar.id = 'selectModeBar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-secondary);border-top:2px solid var(--accent);z-index:110;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));';
+    bar.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-secondary);border-top:2px solid var(--accent);z-index:110;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom));';
     bar.innerHTML =
-      '<button onclick="exitSelectMode()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:inherit;">취소</button>' +
-      '<span style="font-size:13px;color:var(--text-primary);font-weight:600;">' + _selectedIds.length + '개 선택됨</span>' +
-      '<button onclick="openBulkPlatformSelect()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">플랫폼 변경</button>';
+      '<button onclick="exitSelectMode()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:inherit;">취소</button>' +
+      '<span style="font-size:13px;color:var(--text-primary);font-weight:600;">' + _selectedIds.length + '개 선택</span>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button onclick="bulkDeleteOrders()" style="background:var(--expense-dim);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 14px;color:var(--expense);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">삭제</button>' +
+      '<button onclick="openBulkPlatformSelect()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">플랫폼 변경</button>' +
+      '</div>';
     document.getElementById('mainContent').appendChild(bar);
   }
 }
@@ -2067,9 +2069,19 @@ async function applyBulkPlatform(pid) {
   showToast(_selectedIds.length + '개 플랫폼이 변경되었습니다');
   exitSelectMode();
 }
+async function bulkDeleteOrders() {
+  var cnt = _selectedIds.length;
+  if (!cnt) return;
+  var ids = _selectedIds.slice();
+  for (var i = 0; i < ids.length; i++) {
+    await dbDelete('orders', ids[i]);
+    orders = orders.filter(function(x) { return x.id !== ids[i]; });
+  }
+  showToast(cnt + '개 삭제되었습니다');
+  exitSelectMode();
+}
 
 function selectPlatform(pid) {
-  // 일괄 플랫폼 변경 모드
   if (_bulkPlatformMode) {
     _bulkPlatformMode = false;
     closeSheet();
