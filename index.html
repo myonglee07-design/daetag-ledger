@@ -1132,7 +1132,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.26-diag';
+var APP_VERSION = 'v2.2.27-diag';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1799,10 +1799,8 @@ function setWorkType(val) {
   settings.workType = val;
   saveSettings();
   closeSheet();
-  setTimeout(() => {
-    showView(currentView);
-    showToast('업종이 변경되었습니다');
-  }, 250);
+  showView(currentView);
+  showToast('업종이 변경되었습니다');
 }
 
 
@@ -2006,31 +2004,27 @@ function renderPlatformGrid() {
 
 function switchPlatformTab(tab) { platformSelectTab = tab; renderPlatformGrid(); }
 function changePlatformInEdit() {
-  // 플랫폼 변경 후 수정 모드 유지를 위해 플래그 저장
   _platformChangeForEdit = editingOrderId;
-  closeSheet();
-  setTimeout(function() {
-    platformSelectTab = 'delivery';
-    renderPlatformGrid();
-    openSheet('platformSheet');
-  }, 200);
+  // 오더시트만 닫고 overlay 유지 → 플랫폼시트 바로 열기
+  document.getElementById('orderSheet').classList.remove('show');
+  platformSelectTab = 'delivery';
+  renderPlatformGrid();
+  document.getElementById('platformSheet').classList.add('show');
 }
 function selectPlatform(pid) {
   selectedPlatform = pid;
   var pendingEditId = _platformChangeForEdit;
   _platformChangeForEdit = null;
-  closeSheet();
-  setTimeout(function() {
-    if (pendingEditId !== null) {
-      // 플랫폼 변경 후 수정 모드로 폼 재오픈
-      editingOrderId = pendingEditId;
-      var o = orders.find(function(x) { return x.id === pendingEditId; });
-      if (o) { o.platform = pid; }
-      openOrderForm(pid, pendingEditId);
-    } else {
-      openOrderForm(pid, null);
-    }
-  }, 200);
+  // 플랫폼시트만 닫고 overlay 유지 → 오더폼 바로 열기 (closeSheet 불필요)
+  document.getElementById('platformSheet').classList.remove('show');
+  if (pendingEditId !== null) {
+    editingOrderId = pendingEditId;
+    var o = orders.find(function(x) { return x.id === pendingEditId; });
+    if (o) { o.platform = pid; }
+    openOrderForm(pid, pendingEditId);
+  } else {
+    openOrderForm(pid, null);
+  }
 }
 
 // ===================== 오더 폼 =====================
@@ -2044,11 +2038,9 @@ function setOrderType(type) {
     var curType = document.getElementById('orderSheetTitle').dataset.orderType || 'delivery';
     if (curType !== type) {
       // 현재 오더폼 닫고 해당 타입 플랫폼 선택으로
-      closeSheet();
-      setTimeout(function() {
-        platformSelectTab = type;
-        showPlatformSelect();
-      }, 220);
+      document.getElementById('orderSheet').classList.remove('show');
+      platformSelectTab = type;
+      showPlatformSelect();
       return;
     }
   }
