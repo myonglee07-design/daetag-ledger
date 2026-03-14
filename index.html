@@ -64,7 +64,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-size: clamp(14px, 3.8vw, 17px); }
 html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR',sans-serif; overflow: hidden; }
-#app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
+#app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
 
 /* 상단 헤더 */
 .header {
@@ -1079,11 +1079,11 @@ function updateParentBar() {
 
 // ===================== 렌더링 =====================
 function refreshAfterSheetClose() {
-  // 0단계: 키보드 닫기 (포커스 제거)
+  // 0단계: 키보드 닫기
   if (document.activeElement && document.activeElement.blur) {
     document.activeElement.blur();
   }
-  // 1단계: 시트 즉시 닫기 (transition 끊기)
+  // 1단계: 시트 즉시 닫기
   var ov = document.getElementById('overlay');
   var sh = document.querySelectorAll('.bottom-sheet');
   ov.style.transition = 'none';
@@ -1093,9 +1093,8 @@ function refreshAfterSheetClose() {
   void ov.offsetHeight;
   ov.style.transition = '';
   sh.forEach(function(s) { s.style.transition = ''; });
-  // 2단계: 키보드 닫힘 + viewport 안정화 대기 후 렌더
+  // 2단계: 300ms 후 렌더 (키보드 닫힘 + viewport 안정화 대기)
   setTimeout(function() {
-    syncAppHeight();
     render();
     updateParentBar();
   }, 300);
@@ -1104,9 +1103,6 @@ function refreshAfterSheetClose() {
 function render() {
   var c = document.getElementById('mainContent');
   if (!c) return;
-  var beforeH = c.scrollHeight;
-  var beforeChildren = c.children.length;
-  
   if (currentView==='main') renderMain(c);
   else if (currentView==='home') renderHome(c);
   else if (currentView==='journal') renderJournal(c);
@@ -1114,13 +1110,9 @@ function render() {
   else if (currentView==='settings') renderSettings(c);
   else if (currentView==='backup') renderBackup(c);
 
-  // 진단: 렌더 후 상태 체크
-  var afterH = c.scrollHeight;
-  var afterChildren = c.children.length;
+  // 진단 (백지 원인 확인용 — 해결 후 제거)
   var rect = c.getBoundingClientRect();
-  var info = 'view=' + currentView + ' ch=' + afterChildren + ' sH=' + afterH + ' rH=' + Math.round(rect.height) + ' rW=' + Math.round(rect.width) + ' top=' + Math.round(rect.top);
-  
-  // 화면 좌상단에 진단 정보 표시
+  var appRect = document.getElementById('app').getBoundingClientRect();
   var dbg = document.getElementById('_dbg');
   if (!dbg) {
     dbg = document.createElement('div');
@@ -1128,26 +1120,14 @@ function render() {
     dbg.style.cssText = 'position:fixed;top:60px;left:4px;right:4px;z-index:9999;font-size:10px;background:rgba(0,0,0,0.85);color:#0f0;padding:6px 8px;border-radius:6px;pointer-events:none;font-family:monospace;white-space:pre-wrap;line-height:1.4;';
     document.body.appendChild(dbg);
   }
-  
-  var msg = '[render] ' + info;
-  if (afterH < 2 && afterChildren > 0) msg += '\n⚠️ DOM있는데 높이0!';
-  if (afterChildren === 0) msg += '\n⚠️ children 0!';
-  if (rect.height < 2) msg += '\n⚠️ rect.height 0!';
-  if (rect.width < 2) msg += '\n⚠️ rect.width 0!';
-  
-  // 500ms 후 다시 체크 (paint 후)
+  dbg.textContent = '[render] view=' + currentView + ' ch=' + c.children.length + ' sH=' + c.scrollHeight + ' rH=' + Math.round(rect.height) + '\n[app] aH=' + Math.round(appRect.height) + ' innerH=' + window.innerHeight;
   setTimeout(function() {
     var c2 = document.getElementById('mainContent');
-    if (!c2) return;
+    if (!c2 || !dbg) return;
     var r2 = c2.getBoundingClientRect();
-    var sh2 = c2.scrollHeight;
-    var ch2 = c2.children.length;
-    msg += '\n[500ms후] sH=' + sh2 + ' rH=' + Math.round(r2.height) + ' ch=' + ch2;
-    if (sh2 < 2 && ch2 > 0) msg += '\n🔴 500ms후에도 높이0 = 진짜 백지!';
-    dbg.textContent = msg;
-  }, 500);
-  
-  dbg.textContent = msg;
+    var a2 = document.getElementById('app').getBoundingClientRect();
+    dbg.textContent += '\n[300ms후] rH=' + Math.round(r2.height) + ' aH=' + Math.round(a2.height) + ' innerH=' + window.innerHeight;
+  }, 300);
 }
 
 // --- 메인 ---
@@ -2905,17 +2885,6 @@ function autoShrinkAmounts() {
     }
   });
 }
-
-// ===== 뷰포트 높이 동기화 (키보드 열림/닫힘 대응) =====
-function syncAppHeight() {
-  var h = window.innerHeight;
-  document.getElementById('app').style.height = h + 'px';
-}
-window.addEventListener('resize', syncAppHeight);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', syncAppHeight);
-}
-syncAppHeight();
 
 async function init() {
   initTheme();
