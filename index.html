@@ -37,6 +37,7 @@
   --super: #ec4899;
   --logi: #14b8a6;
   --icon: #22c55e;
+  --icon2: #f97316;
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -178,7 +179,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .platform-btn.daegu::before { background: var(--daegu); }
 .platform-btn.super::before { background: var(--super); }
 .platform-btn.logi1::before, .platform-btn.logi2::before { background: var(--logi); }
-.platform-btn.icon::before, .platform-btn.icon2::before { background: var(--icon); }
+.platform-btn.icon::before { background: var(--icon); }
+.platform-btn.icon2::before { background: var(--icon2); }
 .platform-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .platform-type { font-size: 10px; color: var(--text-secondary); background: var(--bg-input); padding: 2px 6px; border-radius: 4px; }
 
@@ -194,13 +196,15 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item.daegu::before { background: var(--daegu); }
 .order-item.super::before { background: var(--super); }
 .order-item.logi1::before, .order-item.logi2::before { background: var(--logi); }
-.order-item.icon::before, .order-item.icon2::before { background: var(--icon); }
+.order-item.icon::before { background: var(--icon); }
+.order-item.icon2::before { background: var(--icon2); }
 .order-item.kakao { background: linear-gradient(135deg, rgba(254,229,0,0.08) 0%, var(--bg-card) 60%); }
 .order-item.tmap { background: linear-gradient(135deg, rgba(0,100,255,0.10) 0%, var(--bg-card) 60%); }
 .order-item.daegu { background: linear-gradient(135deg, rgba(168,85,247,0.10) 0%, var(--bg-card) 60%); }
 .order-item.super { background: linear-gradient(135deg, rgba(236,72,153,0.10) 0%, var(--bg-card) 60%); }
 .order-item.logi1, .order-item.logi2 { background: linear-gradient(135deg, rgba(20,184,166,0.10) 0%, var(--bg-card) 60%); }
-.order-item.icon, .order-item.icon2 { background: linear-gradient(135deg, rgba(34,197,94,0.10) 0%, var(--bg-card) 60%); }
+.order-item.icon { background: linear-gradient(135deg, rgba(34,197,94,0.10) 0%, var(--bg-card) 60%); }
+.order-item.icon2 { background: linear-gradient(135deg, rgba(249,115,22,0.10) 0%, var(--bg-card) 60%); }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .order-type-badge { font-size: 10px; font-weight: 600; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
@@ -1075,13 +1079,22 @@ function updateParentBar() {
 
 // ===================== 렌더링 =====================
 function refreshAfterSheetClose() {
-  document.getElementById('overlay').classList.remove('show');
-  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
-  // 시트 닫힘 애니메이션(0.3s) 이후 렌더 + GPU 레이어 리페인트
-  setTimeout(function() {
-    render();
-    updateParentBar();
-  }, 350);
+  // transition을 즉시 끊어서 GPU 레이어 경쟁 제거
+  var overlay = document.getElementById('overlay');
+  var sheets = document.querySelectorAll('.bottom-sheet');
+  overlay.style.transition = 'none';
+  sheets.forEach(function(s) { s.style.transition = 'none'; });
+  // 즉시 숨김 (애니메이션 없이)
+  overlay.classList.remove('show');
+  sheets.forEach(function(s) { s.classList.remove('show'); });
+  // 강제 reflow: transition:none 적용 확정
+  void overlay.offsetHeight;
+  // transition 복원 (다음에 열 때 애니메이션 정상 작동)
+  overlay.style.transition = '';
+  sheets.forEach(function(s) { s.style.transition = ''; });
+  // 즉시 렌더 (더 이상 대기 불필요)
+  render();
+  updateParentBar();
 }
 function render() {
   const c = document.getElementById('mainContent');
@@ -1100,7 +1113,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.18';
+var APP_VERSION = 'v2.2.20';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1942,7 +1955,7 @@ function renderPlatformGrid() {
   if (filtered.length > 0) {
     listHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     filtered.forEach(function(p) {
-      const colorMap = {kakao:'#FAE100',tmap:'#0064FF',daegu:'#6366f1',super:'#ec4899',logi1:'#14b8a6',logi2:'#14b8a6',icon:'#f59e0b',icon2:'#f59e0b'};
+      const colorMap = {kakao:'#FEE500',tmap:'#0064FF',daegu:'#a855f7',super:'#ec4899',logi1:'#14b8a6',logi2:'#14b8a6',icon:'#22c55e',icon2:'#f97316'};
       const accentColor = colorMap[p.id] || 'var(--accent)';
       listHTML +=
         '<button onclick="selectPlatform(\'' + p.id + '\')" style="' +
@@ -2463,8 +2476,15 @@ function openSheet(id) {
   document.getElementById(id).classList.add('show');
 }
 function closeSheet() {
-  document.getElementById('overlay').classList.remove('show');
-  document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+  var overlay = document.getElementById('overlay');
+  var sheets = document.querySelectorAll('.bottom-sheet');
+  overlay.style.transition = 'none';
+  sheets.forEach(function(s) { s.style.transition = 'none'; });
+  overlay.classList.remove('show');
+  sheets.forEach(function(s) { s.classList.remove('show'); });
+  void overlay.offsetHeight;
+  overlay.style.transition = '';
+  sheets.forEach(function(s) { s.style.transition = ''; });
 }
 
 // ===================== 고정 지출 =====================
@@ -2761,12 +2781,17 @@ window.addEventListener('popstate', function(e) {
   // [1] Android 뒤로가기: 열린 바텀시트가 있으면 닫기만 하고 종료
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
-    document.getElementById('overlay').classList.remove('show');
-    document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+    var _ov = document.getElementById('overlay');
+    var _sh = document.querySelectorAll('.bottom-sheet');
+    _ov.style.transition = 'none';
+    _sh.forEach(function(s) { s.style.transition = 'none'; });
+    _ov.classList.remove('show');
+    _sh.forEach(function(s) { s.classList.remove('show'); });
+    void _ov.offsetHeight;
+    _ov.style.transition = '';
+    _sh.forEach(function(s) { s.style.transition = ''; });
     return;
   }
-
-  // [2] 뷰 전환 로직 (기존)
   const state = e.state;
   if (!state || state.view === 'main') {
     // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
@@ -2863,8 +2888,15 @@ document.addEventListener('backbutton', function(e) {
   // 바텀시트 열려있으면 닫기
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
-    document.getElementById('overlay').classList.remove('show');
-    document.querySelectorAll('.bottom-sheet').forEach(function(s) { s.classList.remove('show'); });
+    var _ov = document.getElementById('overlay');
+    var _sh = document.querySelectorAll('.bottom-sheet');
+    _ov.style.transition = 'none';
+    _sh.forEach(function(s) { s.style.transition = 'none'; });
+    _ov.classList.remove('show');
+    _sh.forEach(function(s) { s.classList.remove('show'); });
+    void _ov.offsetHeight;
+    _ov.style.transition = '';
+    _sh.forEach(function(s) { s.style.transition = ''; });
     return;
   }
   // 메인화면에서 뒤로가기 → 앱 종료
