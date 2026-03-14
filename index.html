@@ -512,7 +512,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 </div>
 
 <!-- 오버레이 + 바텀시트: #app 밖 (flex 레이아웃 영향 제거) -->
-<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="overlay" id="overlay" onclick="var ae=document.activeElement;if(ae&&ae.closest&&ae.closest('.bottom-sheet'))return;closeSheet()"></div>
 
 <!-- 플랫폼 선택 바텀시트 -->
 <div class="bottom-sheet" id="platformSheet" style="max-height:95vh;">
@@ -826,13 +826,15 @@ function showAddrDropdown(inputEl, query) {
     dropdown.appendChild(item);
   });
   const rect = inputEl.getBoundingClientRect();
-  const sheet = document.querySelector('.bottom-sheet.show') || document.body;
-  const sheetRect = sheet.getBoundingClientRect();
-  dropdown.style.top = (rect.bottom - sheetRect.top + sheet.scrollTop) + 'px';
+  const sheetBody = inputEl.closest('.sheet-body') || document.querySelector('.bottom-sheet.show') || document.body;
+  const sheetRect = sheetBody.getBoundingClientRect();
+  dropdown.style.top = (rect.bottom - sheetRect.top + sheetBody.scrollTop) + 'px';
   dropdown.style.left = (rect.left - sheetRect.left) + 'px';
   dropdown.style.position = 'absolute';
-  sheet.style.position = 'relative';
-  sheet.appendChild(dropdown);
+  if (!sheetBody.style.position || sheetBody.style.position === 'static') {
+    sheetBody.style.position = 'relative';
+  }
+  sheetBody.appendChild(dropdown);
 }
 function bindAddrInput(inputEl) {
   if (!inputEl) return;
@@ -1122,7 +1124,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.28-diag';
+var APP_VERSION = 'v2.2.29-diag';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
