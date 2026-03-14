@@ -673,9 +673,6 @@ let editingOrderId = null;
 let selectedPlatform = null;
 let platformSelectTab = 'delivery';
 let _sheetHistoryPending = false; // closeSheet 코드 호출 후 popstate 무시용
-let _selectMode = false;
-let _selectedIds = [];
-let _bulkPlatformMode = false;
 let _platformChangeForEdit = null; // 플랫폼 변경 후 수정 모드 복귀용
 
 let settings = {
@@ -1108,7 +1105,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.2';
+var APP_VERSION = 'v2.3.3';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1171,14 +1168,11 @@ function renderHome(c) {
   const todayNum = currentDate.getDate();
 
   const dayMap = {};
-  const dayPlatMap = {};
   for (const o of orders) {
     if (!o.date || !o.date.startsWith(thisMonth)) continue;
     const p = PLATFORMS[o.platform];
     if (journalType !== 'all' && p && !((p.types||[p.type]).includes(journalType))) continue;
     if (!dayMap[o.date]) dayMap[o.date] = { count:0, income:0, expense:0, net:0 };
-    if (!dayPlatMap[o.date]) dayPlatMap[o.date] = {};
-    dayPlatMap[o.date][o.platform] = (dayPlatMap[o.date][o.platform] || 0) + 1;
     const calc = calcOrderNet(o);
     dayMap[o.date].count++;
     dayMap[o.date].income += calc.income;
@@ -1225,13 +1219,8 @@ function renderHome(c) {
         '<div class="dr-right"><span style="color:var(--text-muted)">\u2014</span></div>' +
         '</div>';
     } else {
-      const _cMap = {kakao:'#FEE500',tmap:'#0064FF',daegu:'#a855f7',super:'#ec4899',logi1:'#14b8a6',logi2:'#14b8a6',icon:'#22c55e',icon2:'#f97316'};
-      const _platCounts = dayPlatMap[ds] || {};
-      const _platEntries = Object.entries(_platCounts);
-      const _domPid = _platEntries.length > 0 ? _platEntries.sort(function(a,b){return b[1]-a[1];})[0][0] : null;
-      const _platColor = _domPid ? (_cMap[_domPid] || 'var(--accent)') : 'var(--accent)';
       dayRows +=
-        '<div class="day-row ' + (isToday?'day-row-today':'') + '" ' + todayId + ' onclick="goToDate(\'' + ds + '\')" style="cursor:pointer;border-left:3px solid ' + _platColor + ';">' +
+        '<div class="day-row ' + (isToday?'day-row-today':'') + '" ' + todayId + ' onclick="goToDate(\'' + ds + '\')" style="cursor:pointer;">' +
         '<div class="dr-date">' +
         '<span class="day-num-txt" style="color:' + (isToday?'var(--accent)':dayColor) + '">' + String(d).padStart(2,'0') + '</span>' +
         '<span class="day-name-txt" style="color:' + (isToday?'var(--accent)':dayColor) + '">(' + dayName + ')</span>' +
@@ -1359,52 +1348,16 @@ function renderJournal(c) {
 
   c.innerHTML = '<div id="journalSwipeArea" style="min-height:calc(100vh - 120px);touch-action:pan-y;">' + todayBtn + itemsHtml + '</div>';
 
+  // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
     changeJournalDate(dir === 'left' ? 1 : -1);
   });
-
-  // 롱프레스 선택 모드
-  var _area = document.getElementById('journalSwipeArea');
-  var _lpTimer = null;
-  if (_area) {
-    _area.addEventListener('touchstart', function(e) {
-      var item = e.target.closest('.order-item');
-      if (!item) return;
-      var id = parseInt(item.dataset.oid);
-      if (isNaN(id)) return;
-      _lpTimer = setTimeout(function() {
-        _lpTimer = null;
-        if (navigator.vibrate) navigator.vibrate(40);
-        enterSelectMode(id);
-      }, 500);
-    }, { passive: true });
-    _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
-    _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
-  }
-
-  // 선택 모드 하단 바
-  var oldBar = document.getElementById('selectModeBar');
-  if (oldBar) oldBar.remove();
-  if (_selectMode) {
-    var bar = document.createElement('div');
-    bar.id = 'selectModeBar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-secondary);border-top:2px solid var(--accent);z-index:110;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom));';
-    bar.innerHTML =
-      '<button onclick="exitSelectMode()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:inherit;">취소</button>' +
-      '<span style="font-size:13px;color:var(--text-primary);font-weight:600;">' + _selectedIds.length + '개 선택</span>' +
-      '<div style="display:flex;gap:8px;">' +
-      '<button onclick="bulkDeleteOrders()" style="background:var(--expense-dim);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 14px;color:var(--expense);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">삭제</button>' +
-      '<button onclick="openBulkPlatformSelect()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">플랫폼 변경</button>' +
-      '</div>';
-    document.getElementById('mainContent').appendChild(bar);
-  }
 }
 
 function changeJournalDate(d) {
   if (changeJournalDate._lock) return;
   changeJournalDate._lock = true;
   setTimeout(function() { changeJournalDate._lock = false; }, 400);
-  _selectMode = false; _selectedIds = [];
   journalDate = new Date(journalDate);
   journalDate.setDate(journalDate.getDate()+d);
   updateHeader();
@@ -1731,10 +1684,11 @@ function renderSettings(c) {
       var _showD = (_wt === 'both' || _wt === 'delivery');
       var _showT = (_wt === 'both' || _wt === 'transport');
       return platformList.map(function(p,i){
+        if (p.id === 'unknown') return '';
         var dChk = _showD ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('delivery')?'checked':'')+' onchange="togglePlatformType('+i+',\'delivery\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리</label>' : '';
         var tChk = _showT ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('transport')?'checked':'')+' onchange="togglePlatformType('+i+',\'transport\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송</label>' : '';
         var pfee = p.programFee ? '<div style="font-size:11px;color:var(--accent);margin-top:2px;">프로그램 '+Math.round(p.programFee).toLocaleString()+'원/월</div>' : '';
-        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</div>'+pfee+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:8px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<button onclick="editPlatformFee('+i+')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 6px;">편집</button><label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px;"><span style="font-size:11px;color:var(--text-muted);">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</span><button onclick="editPlatformFee('+i+')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 4px;line-height:1.4;">편집</button></div>'+pfee+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:8px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
       }).join('');
     })()}
     <button onclick="openAddPlatformSheet()" style="background:var(--bg-input);border:1px dashed var(--accent);border-radius:10px;padding:12px;color:var(--accent);font-size:14px;cursor:pointer;width:100%;">+ 플랫폼 추가</button>
@@ -1923,12 +1877,8 @@ function orderItemHTML(o, editable) {
   });
 
   const netColor = calc.net >= 0 ? 'var(--income)' : 'var(--expense)';
-  var isSelected = _selectMode && _selectedIds.indexOf(o.id) >= 0;
-  var onclickVal = editable ? (_selectMode ? 'toggleOrderSelect(' + o.id + ')' : 'editOrder(' + o.id + ')') : '';
-  var selStyle = isSelected ? 'box-shadow:inset 0 0 0 2px var(--accent);' : '';
 
-  return '<div class="order-item ' + (p.cls||'') + '" data-oid="' + o.id + '" onclick="' + onclickVal + '" style="' + selStyle + '">' +
-    (_selectMode ? '<div style="position:absolute;top:10px;right:10px;z-index:3;width:22px;height:22px;border-radius:50%;border:2px solid ' + (isSelected?'var(--accent)':'var(--border)') + ';background:' + (isSelected?'var(--accent)':'var(--bg-input)') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + (isSelected?'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'') + '</div>' : '') +
+  return '<div class="order-item ' + (p.cls||'') + '" onclick="' + (editable ? 'editOrder('+o.id+')' : '') + '">' +
     '<div class="order-item-header">' +
     '<span class="order-time">' + time + '</span>' +
     '<div style="display:flex;align-items:center;gap:5px;">' +
@@ -2035,59 +1985,7 @@ function changePlatformInEdit() {
   renderPlatformGrid();
   document.getElementById('platformSheet').classList.add('show');
 }
-// ===================== 일지 선택 모드 =====================
-function enterSelectMode(id) {
-  _selectMode = true;
-  _selectedIds = [id];
-  render();
-}
-function toggleOrderSelect(id) {
-  var idx = _selectedIds.indexOf(id);
-  if (idx >= 0) _selectedIds.splice(idx, 1);
-  else _selectedIds.push(id);
-  if (_selectedIds.length === 0) { exitSelectMode(); return; }
-  render();
-}
-function exitSelectMode() {
-  _selectMode = false;
-  _selectedIds = [];
-  var bar = document.getElementById('selectModeBar');
-  if (bar) bar.remove();
-  render();
-}
-function openBulkPlatformSelect() {
-  _bulkPlatformMode = true;
-  platformSelectTab = 'delivery';
-  renderPlatformGrid();
-  openSheet('platformSheet');
-}
-async function applyBulkPlatform(pid) {
-  for (var i = 0; i < _selectedIds.length; i++) {
-    var o = orders.find(function(x) { return x.id === _selectedIds[i]; });
-    if (o) { o.platform = pid; await dbPut('orders', o); }
-  }
-  showToast(_selectedIds.length + '개 플랫폼이 변경되었습니다');
-  exitSelectMode();
-}
-async function bulkDeleteOrders() {
-  var cnt = _selectedIds.length;
-  if (!cnt) return;
-  var ids = _selectedIds.slice();
-  for (var i = 0; i < ids.length; i++) {
-    await dbDelete('orders', ids[i]);
-    orders = orders.filter(function(x) { return x.id !== ids[i]; });
-  }
-  showToast(cnt + '개 삭제되었습니다');
-  exitSelectMode();
-}
-
 function selectPlatform(pid) {
-  if (_bulkPlatformMode) {
-    _bulkPlatformMode = false;
-    closeSheet();
-    setTimeout(function() { applyBulkPlatform(pid); }, 200);
-    return;
-  }
   selectedPlatform = pid;
   var pendingEditId = _platformChangeForEdit;
   _platformChangeForEdit = null;
