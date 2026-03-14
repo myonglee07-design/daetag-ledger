@@ -195,6 +195,12 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item.super::before { background: var(--super); }
 .order-item.logi1::before, .order-item.logi2::before { background: var(--logi); }
 .order-item.icon::before, .order-item.icon2::before { background: var(--icon); }
+.order-item.kakao { background: linear-gradient(135deg, rgba(254,229,0,0.08) 0%, var(--bg-card) 60%); }
+.order-item.tmap { background: linear-gradient(135deg, rgba(0,100,255,0.10) 0%, var(--bg-card) 60%); }
+.order-item.daegu { background: linear-gradient(135deg, rgba(99,102,241,0.10) 0%, var(--bg-card) 60%); }
+.order-item.super { background: linear-gradient(135deg, rgba(236,72,153,0.10) 0%, var(--bg-card) 60%); }
+.order-item.logi1, .order-item.logi2 { background: linear-gradient(135deg, rgba(20,184,166,0.10) 0%, var(--bg-card) 60%); }
+.order-item.icon, .order-item.icon2 { background: linear-gradient(135deg, rgba(245,158,11,0.10) 0%, var(--bg-card) 60%); }
 .order-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .order-type-badge { font-size: 10px; font-weight: 600; }
 .order-time { font-size: clamp(13px, 3.5vw, 15px); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
@@ -1081,7 +1087,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.11';
+var APP_VERSION = 'v2.2.13';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1258,7 +1264,7 @@ function renderHome(c) {
 
   // ④ 스와이프로 전월/다음달 이동
   bindSwipe(document.getElementById('homeSwipeArea'), function(dir) {
-    changeHomeMonth(dir === 'left' ? -1 : 1);
+    changeHomeMonth(dir === 'left' ? 1 : -1);
   });
 
   // ⑤ 금액 자동축소
@@ -1326,7 +1332,7 @@ function renderJournal(c) {
 
   // ③ 스와이프로 전날/다음날 이동 (journalSwipeArea - innerHTML 교체로 이벤트 자동 초기화)
   bindSwipe(document.getElementById('journalSwipeArea'), function(dir) {
-    changeJournalDate(dir === 'left' ? -1 : 1);
+    changeJournalDate(dir === 'left' ? 1 : -1);
   });
 }
 
@@ -1474,7 +1480,7 @@ function bindMonthlySwipe(c) {
   if (monthlyTab === 'stats') return;
   const area = c.querySelector('div');
   if (area) bindSwipe(area, function(dir) {
-    changeMonthlyDate(dir === 'left' ? -1 : 1);
+    changeMonthlyDate(dir === 'left' ? 1 : -1);
   });
 }
 
