@@ -64,7 +64,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-size: clamp(14px, 3.8vw, 17px); }
 html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: 'Noto Sans KR',sans-serif; overflow: hidden; }
-#app { height: 100vh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
+#app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
 
 /* 상단 헤더 */
 .header {
@@ -1079,7 +1079,11 @@ function updateParentBar() {
 
 // ===================== 렌더링 =====================
 function refreshAfterSheetClose() {
-  var t0 = Date.now();
+  // 0단계: 키보드 닫기 (포커스 제거)
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+  // 1단계: 시트 즉시 닫기 (transition 끊기)
   var ov = document.getElementById('overlay');
   var sh = document.querySelectorAll('.bottom-sheet');
   ov.style.transition = 'none';
@@ -1089,22 +1093,12 @@ function refreshAfterSheetClose() {
   void ov.offsetHeight;
   ov.style.transition = '';
   sh.forEach(function(s) { s.style.transition = ''; });
-  
-  // 진단: 시트 닫기 후 mainContent 상태
-  var c = document.getElementById('mainContent');
-  var dbg = document.getElementById('_dbg');
-  if (dbg && c) {
-    dbg.textContent = '[시트닫기] view=' + currentView + ' sH=' + c.scrollHeight + ' ch=' + c.children.length;
-  }
-  
-  requestAnimationFrame(function() {
-    if (dbg) dbg.textContent += '\n[RAF1] +' + (Date.now()-t0) + 'ms';
-    requestAnimationFrame(function() {
-      if (dbg) dbg.textContent += '\n[RAF2] +' + (Date.now()-t0) + 'ms → render() 호출';
-      render();
-      updateParentBar();
-    });
-  });
+  // 2단계: 키보드 닫힘 + viewport 안정화 대기 후 렌더
+  setTimeout(function() {
+    syncAppHeight();
+    render();
+    updateParentBar();
+  }, 300);
 }
 
 function render() {
@@ -1158,7 +1152,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.24-diag';
+var APP_VERSION = 'v2.2.25-diag';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2911,6 +2905,17 @@ function autoShrinkAmounts() {
     }
   });
 }
+
+// ===== 뷰포트 높이 동기화 (키보드 열림/닫힘 대응) =====
+function syncAppHeight() {
+  var h = window.innerHeight;
+  document.getElementById('app').style.height = h + 'px';
+}
+window.addEventListener('resize', syncAppHeight);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncAppHeight);
+}
+syncAppHeight();
 
 async function init() {
   initTheme();
