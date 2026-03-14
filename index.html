@@ -533,9 +533,11 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
-      <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
-      <div id="orderSheetPlatformChange" style="display:none;margin-top:6px;">
-        <button onclick="changePlatformInEdit()" style="font-size:12px;color:var(--accent);background:var(--bg-input);border:1px solid var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;">🔄 플랫폼 변경</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="sheet-title" id="orderSheetTitle">오더 추가</div>
+        <div id="orderSheetPlatformChange" style="display:none;">
+          <button onclick="changePlatformInEdit()" style="font-size:11px;color:var(--accent);background:var(--bg-input);border:1px solid var(--accent);border-radius:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;">🔄 플랫폼 변경</button>
+        </div>
       </div>
       <div style="display:flex;gap:6px;" id="orderTypeToggle">
         <button id="orderTypeDelivery" onclick="setOrderType('delivery')" style="flex:1;padding:5px 0;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">🚗 대리운전</button>
@@ -1108,7 +1110,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.6';
+var APP_VERSION = 'v2.3.7';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2141,14 +2143,10 @@ function openOrderForm(pid, orderId) {
   let o = isEdit ? orders.find(x=>x.id===orderId) : null;
 
   document.getElementById('orderSheetTitle').textContent = isEdit ? '오더 수정' : '오더 추가';
-  // unknown 플랫폼 수정 시: 플랫폼 변경 링크 표시
+  // 수정 모드: 플랫폼 변경 버튼 항상 표시
   var _platformChangeBtn = document.getElementById('orderSheetPlatformChange');
   if (_platformChangeBtn) {
-    if (isEdit && pid === 'unknown') {
-      _platformChangeBtn.style.display = 'block';
-    } else {
-      _platformChangeBtn.style.display = 'none';
-    }
+    _platformChangeBtn.style.display = isEdit ? 'block' : 'none';
   }
   // 대리/탁송 토글 - 플랫폼 타입에 맞게 초기 선택
   // setOrderType은 openSheet 직후에 호출 (아래)
