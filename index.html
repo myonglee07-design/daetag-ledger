@@ -1079,41 +1079,52 @@ function updateParentBar() {
 
 // ===================== 렌더링 =====================
 function refreshAfterSheetClose() {
-  // transition을 즉시 끊어서 GPU 레이어 경쟁 제거
-  var overlay = document.getElementById('overlay');
-  var sheets = document.querySelectorAll('.bottom-sheet');
-  overlay.style.transition = 'none';
-  sheets.forEach(function(s) { s.style.transition = 'none'; });
-  // 즉시 숨김 (애니메이션 없이)
-  overlay.classList.remove('show');
-  sheets.forEach(function(s) { s.classList.remove('show'); });
-  // 강제 reflow: transition:none 적용 확정
-  void overlay.offsetHeight;
-  // transition 복원 (다음에 열 때 애니메이션 정상 작동)
-  overlay.style.transition = '';
-  sheets.forEach(function(s) { s.style.transition = ''; });
-  // 즉시 렌더 (더 이상 대기 불필요)
+  // transition 즉시 끊기
+  var ov = document.getElementById('overlay');
+  var sh = document.querySelectorAll('.bottom-sheet');
+  ov.style.transition = 'none';
+  sh.forEach(function(s) { s.style.transition = 'none'; });
+  ov.classList.remove('show');
+  sh.forEach(function(s) { s.classList.remove('show'); });
+  void ov.offsetHeight;
+  ov.style.transition = '';
+  sh.forEach(function(s) { s.style.transition = ''; });
   render();
   updateParentBar();
 }
+
 function render() {
-  const c = document.getElementById('mainContent');
+  var c = document.getElementById('mainContent');
   if (!c) return;
-  // innerHTML = '' 제거: 각 renderXxx가 이미 통째로 교체함
-  // 비우는 순간 flex 높이 0 → WebView GPU 레이어 커밋 → paint 누락 원인
+
   if (currentView==='main') renderMain(c);
   else if (currentView==='home') renderHome(c);
   else if (currentView==='journal') renderJournal(c);
   else if (currentView==='monthly') renderMonthly(c);
   else if (currentView==='settings') renderSettings(c);
   else if (currentView==='backup') renderBackup(c);
-  // 강제 reflow: WebView가 새 콘텐츠를 반드시 paint 하도록
+
+  // GPU 레이어 강제 파괴 + 재생성 (백지 방지 핵심)
+  c.style.display = 'none';
   void c.offsetHeight;
+  c.style.display = '';
+  void c.offsetHeight;
+
+  // 500ms 후 자동 복구 감시
+  setTimeout(function() {
+    var mc = document.getElementById('mainContent');
+    if (mc && mc.scrollHeight < 2 && mc.children.length > 0) {
+      // DOM은 있는데 안 그려짐 → 강제 복구
+      mc.style.display = 'none';
+      void mc.offsetHeight;
+      mc.style.display = '';
+    }
+  }, 500);
 }
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.20';
+var APP_VERSION = 'v2.2.21';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2476,15 +2487,15 @@ function openSheet(id) {
   document.getElementById(id).classList.add('show');
 }
 function closeSheet() {
-  var overlay = document.getElementById('overlay');
-  var sheets = document.querySelectorAll('.bottom-sheet');
-  overlay.style.transition = 'none';
-  sheets.forEach(function(s) { s.style.transition = 'none'; });
-  overlay.classList.remove('show');
-  sheets.forEach(function(s) { s.classList.remove('show'); });
-  void overlay.offsetHeight;
-  overlay.style.transition = '';
-  sheets.forEach(function(s) { s.style.transition = ''; });
+  var ov = document.getElementById('overlay');
+  var sh = document.querySelectorAll('.bottom-sheet');
+  ov.style.transition = 'none';
+  sh.forEach(function(s) { s.style.transition = 'none'; });
+  ov.classList.remove('show');
+  sh.forEach(function(s) { s.classList.remove('show'); });
+  void ov.offsetHeight;
+  ov.style.transition = '';
+  sh.forEach(function(s) { s.style.transition = ''; });
 }
 
 // ===================== 고정 지출 =====================
@@ -2778,20 +2789,14 @@ async function resetAllData() {
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
-  // [1] Android 뒤로가기: 열린 바텀시트가 있으면 닫기만 하고 종료
+  // [1] 열린 바텀시트 있으면 닫기
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
-    var _ov = document.getElementById('overlay');
-    var _sh = document.querySelectorAll('.bottom-sheet');
-    _ov.style.transition = 'none';
-    _sh.forEach(function(s) { s.style.transition = 'none'; });
-    _ov.classList.remove('show');
-    _sh.forEach(function(s) { s.classList.remove('show'); });
-    void _ov.offsetHeight;
-    _ov.style.transition = '';
-    _sh.forEach(function(s) { s.style.transition = ''; });
+    closeSheet();
     return;
   }
+
+  // [2] 뷰 전환 로직
   const state = e.state;
   if (!state || state.view === 'main') {
     // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
@@ -2885,18 +2890,9 @@ init();
 // 안드로이드 하드웨어 뒤로가기 버튼 처리 (Capacitor APK 전용)
 document.addEventListener('backbutton', function(e) {
   e.preventDefault();
-  // 바텀시트 열려있으면 닫기
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
-    var _ov = document.getElementById('overlay');
-    var _sh = document.querySelectorAll('.bottom-sheet');
-    _ov.style.transition = 'none';
-    _sh.forEach(function(s) { s.style.transition = 'none'; });
-    _ov.classList.remove('show');
-    _sh.forEach(function(s) { s.classList.remove('show'); });
-    void _ov.offsetHeight;
-    _ov.style.transition = '';
-    _sh.forEach(function(s) { s.style.transition = ''; });
+    closeSheet();
     return;
   }
   // 메인화면에서 뒤로가기 → 앱 종료
