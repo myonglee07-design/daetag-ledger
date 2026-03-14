@@ -1108,7 +1108,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.4';
+var APP_VERSION = 'v2.3.5';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1712,12 +1712,12 @@ function renderSettings(c) {
 
   <div class="section-label">업종 설정</div>
   <div style="margin:0 16px 4px;">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
       <div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">현재 업종</div>
-        <div style="font-size:15px;color:var(--accent);font-weight:700;">${wtLabel}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:3px;">현재 업종</div>
+        <div style="font-size:0.95rem;color:var(--accent);font-weight:700;">${wtLabel}</div>
       </div>
-      <button onclick="showWorkTypeSheet()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--text-primary);cursor:pointer;font-family:'Noto Sans KR',sans-serif;">변경</button>
+      <button onclick="showWorkTypeSheet()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:0.85rem;color:var(--text-primary);cursor:pointer;font-family:'Noto Sans KR',sans-serif;">변경</button>
     </div>
   </div>
 
@@ -1730,13 +1730,13 @@ function renderSettings(c) {
       var _showT = (_wt === 'both' || _wt === 'transport');
       return platformList.map(function(p,i){
         if (p.id === 'unknown') return '';
-        var dChk = _showD ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('delivery')?'checked':'')+' onchange="togglePlatformType('+i+',\'delivery\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리</label>' : '';
-        var tChk = _showT ? '<label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('transport')?'checked':'')+' onchange="togglePlatformType('+i+',\'transport\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송</label>' : '';
-        var pfee = p.programFee ? '<div style="font-size:11px;color:var(--accent);margin-top:2px;">프로그램 '+Math.round(p.programFee).toLocaleString()+'원/월</div>' : '';
-        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px;"><span style="font-size:11px;color:var(--text-muted);">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</span><button onclick="editPlatformFee('+i+')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 4px;line-height:1.4;">편집</button></div>'+pfee+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><div style="display:flex;gap:10px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:6px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:11px;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">목록표시</span><label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
+        var dChk = _showD ? '<label style="display:flex;align-items:center;gap:3px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('delivery')?'checked':'')+' onchange="togglePlatformType('+i+',\'delivery\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 대리</label>' : '';
+        var tChk = _showT ? '<label style="display:flex;align-items:center;gap:3px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" '+(p.types.includes('transport')?'checked':'')+' onchange="togglePlatformType('+i+',\'transport\',this.checked)" style="accent-color:var(--accent);width:15px;height:15px;"> 탁송</label>' : '';
+        var pfee = p.programFee ? '<div style="font-size:0.7rem;color:var(--accent);margin-top:2px;">프로그램 '+Math.round(p.programFee).toLocaleString()+'원/월</div>' : '';
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;"><div style="flex:1;min-width:0;"><div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">'+p.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;"><span style="font-size:0.7rem;color:var(--text-muted);">수수료 '+Math.round((p.feeRate||0.2)*100)+'%</span><button onclick="editPlatformFee('+i+')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 4px;line-height:1.4;">편집</button></div>'+pfee+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;"><div style="display:flex;gap:8px;">'+dChk+tChk+'</div><div style="display:flex;align-items:center;gap:6px;">'+ (!p.builtIn?'<button onclick="deletePlatform('+i+')" style="font-size:0.7rem;color:var(--expense);background:none;border:none;cursor:pointer;padding:2px 6px;">삭제</button>':'') +'<span style="font-size:0.65rem;color:var(--text-muted);white-space:nowrap;">목록표시</span><label class="toggle" style="transform:scale(0.85);transform-origin:right center;"><input type="checkbox" '+(p.active?'checked':'')+' onchange="togglePlatformActive('+i+',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div></div></div>';
       }).join('');
     })()}
-    <button onclick="openAddPlatformSheet()" style="background:var(--bg-input);border:1px dashed var(--accent);border-radius:10px;padding:12px;color:var(--accent);font-size:14px;cursor:pointer;width:100%;">+ 플랫폼 추가</button>
+    <button onclick="openAddPlatformSheet()" style="background:var(--bg-input);border:1px dashed var(--accent);border-radius:10px;padding:12px;color:var(--accent);font-size:0.9rem;cursor:pointer;width:100%;">+ 플랫폼 추가</button>
   </div>
 
   <div class="section-label">입력 설정</div>
@@ -1764,12 +1764,12 @@ function renderSettings(c) {
   <div style="margin:0 16px;display:flex;flex-direction:column;gap:10px;">
     <button class="btn-secondary" onclick="document.getElementById('importInput').click()">📥 대리가계부 DB 가져오기 (ZIP)</button>
     <input type="file" id="importInput" accept=".zip,.db" style="display:none" onchange="importLegacyDB(this)">
-    <div style="font-size:12px;color:var(--text-muted);padding:4px 2px;">기존 대리가계부 앱의 백업 ZIP 파일을 선택하면 자동으로 변환합니다.</div>
+    <div style="font-size:0.75rem;color:var(--text-muted);padding:4px 2px;">기존 대리가계부 앱의 백업 ZIP 파일을 선택하면 자동으로 변환합니다.</div>
   </div>
 
   <div class="section-label" style="color:var(--expense);">위험 구역</div>
   <div style="margin:0 16px 32px;">
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">비밀번호: <b>0000</b> · 모든 콜 데이터와 설정이 삭제됩니다</div>
+    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">비밀번호: <b>0000</b> · 모든 콜 데이터와 설정이 삭제됩니다</div>
     <button class="btn-secondary" style="border-color:var(--expense);color:var(--expense);width:100%;" onclick="resetAppConfirm()">⚠️ 완전 초기화</button>
   </div>
   </div>
