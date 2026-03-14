@@ -1013,7 +1013,7 @@ function updateParentBar() {
 
   if (currentView === 'home') {
     // 월달력 기준
-    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const y = homeMonth.getFullYear(), m = homeMonth.getMonth();
     const monthOrders = orders.filter(o => {
       const d = new Date(o.date);
       return d.getFullYear()===y && d.getMonth()===m;
@@ -1041,14 +1041,16 @@ function updateParentBar() {
     if (lbNet)   lbNet.textContent   = y + '년 ' + (m+1) + '월 실수입';
   } else {
     // 일 기준 (journal)
-    const today = dateStr(journalDate || currentDate);
+    const jd = journalDate || currentDate;
+    const today = dateStr(jd);
     const dayOrders = orders.filter(o=>o.date===today);
     cnt = dayOrders.length;
     inc = dayOrders.reduce((s,o)=>s+calcOrderNet(o).income,0);
     exp = dayOrders.reduce((s,o)=>s+calcOrderNet(o).expense,0);
     net = inc - exp;
-    if (lbCount) lbCount.textContent = '오늘 건수';
-    if (lbNet)   lbNet.textContent   = '오늘 순수입';
+    const jLabel = (jd.getMonth()+1) + '/' + jd.getDate();
+    if (lbCount) lbCount.textContent = jLabel + ' 건수';
+    if (lbNet)   lbNet.textContent   = jLabel + ' 순수입';
   }
 
   pbCount.textContent = cnt + '건';
@@ -1079,7 +1081,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.2.1';
+var APP_VERSION = 'v2.2.2';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1325,6 +1327,7 @@ function changeJournalDate(d) {
   journalDate.setDate(journalDate.getDate()+d);
   updateHeader();
   render();
+  updateParentBar();
 }
 
 // --- 결산 ---
