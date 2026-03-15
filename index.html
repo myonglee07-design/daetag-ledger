@@ -948,8 +948,7 @@ function openSettings() {
 
 function showView(v, skipHistory) {
   if (v !== 'journal' && _selectMode) {
-    _selectMode = false;
-    _selectedIds = [];
+    _selectMode = false; _selectedIds = [];
     var _bar = document.getElementById('selectModeBar');
     if (_bar) _bar.remove();
   }
@@ -1117,7 +1116,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.11';
+var APP_VERSION = 'v2.3.12';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1381,12 +1380,15 @@ function renderJournal(c) {
       if (!item) return;
       var id = parseInt(item.dataset.oid);
       if (isNaN(id)) return;
-      e.preventDefault();
-      _lpTimer = setTimeout(function() {
-        _lpTimer = null;
-        if (navigator.vibrate) navigator.vibrate(40);
-        enterSelectMode(id);
-      }, 500);
+      // 선택 모드 아닐 때만 롱프레스 감지 + 브라우저 메뉴 차단
+      if (!_selectMode) {
+        e.preventDefault();
+        _lpTimer = setTimeout(function() {
+          _lpTimer = null;
+          if (navigator.vibrate) navigator.vibrate(40);
+          enterSelectMode(id);
+        }, 500);
+      }
     }, { passive: false });
     _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
