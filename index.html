@@ -679,6 +679,7 @@ let _sheetHistoryPending = false;
 let _selectMode = false;
 let _selectedIds = [];
 let _bulkPlatformMode = false;
+let _lpTimer = null;
 let _platformChangeForEdit = null; // 플랫폼 변경 후 수정 모드 복귀용
 
 let settings = {
@@ -949,6 +950,7 @@ function openSettings() {
 function showView(v, skipHistory) {
   if (v !== 'journal' && _selectMode) {
     _selectMode = false; _selectedIds = [];
+    if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
     var _bar = document.getElementById('selectModeBar');
     if (_bar) _bar.remove();
   }
@@ -1116,7 +1118,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.13';
+var APP_VERSION = 'v2.3.14';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1372,7 +1374,7 @@ function renderJournal(c) {
   });
 
   var _area = document.getElementById('journalSwipeArea');
-  var _lpTimer = null;
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
   if (_area) {
     _area.addEventListener('touchstart', function(e) {
       if (e.touches.length > 1) return;
