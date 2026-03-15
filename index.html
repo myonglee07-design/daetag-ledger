@@ -188,6 +188,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   margin: 6px 16px; padding: 14px; cursor: pointer; position: relative; overflow: hidden;
+  user-select: none; -webkit-user-select: none;
 }
 .order-item:active { background: #282828; }
 .order-item::before { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 100%; }
@@ -685,7 +686,6 @@ let settings = {
   workType: null,
   fontSize: 'sm',
   kakaoAffiliateFee: 800,
-  callInsuranceFees: {},
   fixedExpenses: [
     { id:'daegu_monthly', name:'대구시민 사용료',         amount:15000, locked:true,  active:true  },
     { id:'logi1_monthly', name:'로지1 사용료',             amount:15000, locked:true,  active:true  },
@@ -746,7 +746,6 @@ async function loadData() {
     if (s.key === 'addrAutocomplete') settings.addrAutocomplete = s.value;
     if (s.key === 'workType') settings.workType = s.value;
     if (s.key === 'kakaoAffiliateFee') settings.kakaoAffiliateFee = s.value;
-    if (s.key === 'callInsuranceFees') settings.callInsuranceFees = s.value || {};
     if (s.key === 'fontSize') settings.fontSize = s.value;
     if (s.key === 'platformList') {
       let loaded = s.value.map(p => {
@@ -779,7 +778,6 @@ async function saveSettings() {
   await dbPut('settings', { key:'workType', value: settings.workType });
   await dbPut('settings', { key:'platformList', value: platformList });
   await dbPut('settings', { key:'kakaoAffiliateFee', value: settings.kakaoAffiliateFee });
-  await dbPut('settings', { key:'callInsuranceFees', value: settings.callInsuranceFees });
   await dbPut('settings', { key:'fontSize', value: settings.fontSize });
   rebuildPlatforms();
 }
@@ -1113,7 +1111,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.8';
+var APP_VERSION = 'v2.3.9';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1377,12 +1375,13 @@ function renderJournal(c) {
       if (!item) return;
       var id = parseInt(item.dataset.oid);
       if (isNaN(id)) return;
+      e.preventDefault(); // 텍스트 선택 메뉴 차단
       _lpTimer = setTimeout(function() {
         _lpTimer = null;
         if (navigator.vibrate) navigator.vibrate(40);
         enterSelectMode(id);
       }, 500);
-    }, { passive: true });
+    }, { passive: false });
     _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
   }
@@ -2230,20 +2229,11 @@ function openOrderForm(pid, orderId) {
       '</div>';
   }
 
-  if (pid !== 'kakao' && pid !== 'tmap') {
-    var _savedIns = (settings.callInsuranceFees && settings.callInsuranceFees[pid] !== undefined)
-      ? settings.callInsuranceFees[pid] : 800;
-    var _insVal = isEdit ? (o.perCallInsurance || 0) : _savedIns;
-    var _insOn  = isEdit ? (o.perCallInsurance > 0) : false;
+  if (pid==='daegu') {
     html +=
-      '<div class="form-group">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<div class="form-label" style="margin:0;">건당 보험료</div>' +
-      '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<input class="form-input form-input-mono" type="number" id="f_call_insurance_amt" value="' + (_insVal||800) + '" placeholder="800" style="width:80px;padding:6px 8px;font-size:13px;" oninput="updateCalc()">' +
-      '<span style="font-size:12px;color:var(--text-muted);">원</span>' +
-      '<label class="toggle"><input type="checkbox" id="f_call_insurance" ' + (_insOn?'checked':'') + ' onchange="updateCalc()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>' +
-      '</div></div></div>';
+      '<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<div class="form-label">건당 보험료</div>' +
+      '<span style="color:var(--expense);font-family:JetBrains Mono,monospace;font-size:14px">-800원</span></div></div>';
   }
 
   // 통행료: 항상 렌더, 대리/탁송 토글로 show/hide
@@ -2458,13 +2448,7 @@ function updateCalc() {
     const feeOverrideEl = document.getElementById('f_fee_override');
     fee = feeOverrideEl ? (parseInt(feeOverrideEl.value||0)||0) : autoFee;
     feeLabel = fee !== autoFee ? '수수료 (직접입력)' : '수수료 (' + (p.feeRate*100) + '%)';
-    if (p.id !== 'kakao' && p.id !== 'tmap') {
-      var _insChk = document.getElementById('f_call_insurance');
-      var _insAmt = document.getElementById('f_call_insurance_amt');
-      if (_insChk && _insChk.checked && _insAmt) {
-        insuranceFee = parseInt(_insAmt.value||0)||0;
-      }
-    }
+    if (p.id==='daegu') insuranceFee = 800;
     if (p.id==='kakao' && isAffiliate) {
       var _affFeeEl = document.getElementById('f_affiliate_fee');
       affiliateFee = _affFeeEl ? (parseInt(_affFeeEl.value)||800) : (settings.kakaoAffiliateFee||800);
@@ -2513,18 +2497,7 @@ async function submitOrder() {
     saveSettings();
   }
   const affiliateFee = (pid==='kakao'&&isAffiliate) ? _affFeeVal : 0;
-  var _insChkEl = document.getElementById('f_call_insurance');
-  var _insAmtEl = document.getElementById('f_call_insurance_amt');
-  var _insAmt = _insAmtEl ? (parseInt(_insAmtEl.value||0)||0) : 0;
-  const perCallInsurance = (!isNetAmount && _insChkEl && _insChkEl.checked) ? _insAmt : 0;
-  // 플랫폼별 금액 저장 (카카오/티맵 제외)
-  if (pid !== 'kakao' && pid !== 'tmap' && _insAmtEl) {
-    if (!settings.callInsuranceFees) settings.callInsuranceFees = {};
-    if (_insAmt !== settings.callInsuranceFees[pid]) {
-      settings.callInsuranceFees[pid] = _insAmt;
-      saveSettings();
-    }
-  }
+  const perCallInsurance = pid==='daegu' ? 800 : 0;
   const toll = parseInt((document.getElementById('f_toll')||{}).value||0)||0;
   const autoFee = Math.round(fare * p.feeRate);
   const feeOverrideVal = parseInt((document.getElementById('f_fee_override')||{}).value||0)||0;
