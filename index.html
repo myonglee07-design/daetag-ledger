@@ -188,7 +188,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   margin: 6px 16px; padding: 14px; cursor: pointer; position: relative; overflow: hidden;
-  user-select: none; -webkit-user-select: none;
 }
 .order-item:active { background: #282828; }
 .order-item::before { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 100%; }
@@ -947,6 +946,13 @@ function openSettings() {
 }
 
 function showView(v, skipHistory) {
+  // 뷰 전환 시 선택 모드 자동 해제
+  if (v !== 'journal' && _selectMode) {
+    _selectMode = false;
+    _selectedIds = [];
+    var _bar = document.getElementById('selectModeBar');
+    if (_bar) _bar.remove();
+  }
   currentView = v;
 
   // Android 뒤로가기용 history 스택 관리
@@ -1111,7 +1117,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.9';
+var APP_VERSION = 'v2.3.10';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1375,13 +1381,12 @@ function renderJournal(c) {
       if (!item) return;
       var id = parseInt(item.dataset.oid);
       if (isNaN(id)) return;
-      e.preventDefault(); // 텍스트 선택 메뉴 차단
       _lpTimer = setTimeout(function() {
         _lpTimer = null;
         if (navigator.vibrate) navigator.vibrate(40);
         enterSelectMode(id);
       }, 500);
-    }, { passive: false });
+    }, { passive: true });
     _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
   }
