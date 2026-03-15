@@ -188,7 +188,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   margin: 6px 16px; padding: 14px; cursor: pointer; position: relative; overflow: hidden;
-  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .order-item:active { background: #282828; }
 .order-item::before { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 100%; }
@@ -679,7 +678,6 @@ let _sheetHistoryPending = false;
 let _selectMode = false;
 let _selectedIds = [];
 let _bulkPlatformMode = false;
-let _lpTimer = null;
 let _platformChangeForEdit = null; // 플랫폼 변경 후 수정 모드 복귀용
 
 let settings = {
@@ -948,12 +946,6 @@ function openSettings() {
 }
 
 function showView(v, skipHistory) {
-  if (v !== 'journal' && _selectMode) {
-    _selectMode = false; _selectedIds = [];
-    if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
-    var _bar = document.getElementById('selectModeBar');
-    if (_bar) _bar.remove();
-  }
   currentView = v;
 
   // Android 뒤로가기용 history 스택 관리
@@ -1118,7 +1110,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.14';
+var APP_VERSION = 'v2.3.15';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1128,7 +1120,8 @@ function renderMain(c) {
   const _fs = "'Noto Sans KR',sans-serif";
   c.innerHTML =
   '<div style="padding:16px 16px 8px;min-height:calc(100vh - 120px);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;position:relative;">' +
-    '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;">' +
+    '<button onclick="openJournal(\'all\')" style="flex:1;min-height:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;position:relative;overflow:hidden;">' +
+      '<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent);border-radius:18px 0 0 18px;"></div>' +
       _svgJournal +
       '<div style="text-align:center;">' +
         '<div style="font-size:clamp(18px,5vw,22px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">대탁일지</div>' +
@@ -1136,14 +1129,16 @@ function renderMain(c) {
       '</div>' +
     '</button>' +
     '<div style="flex:0 0 170px;display:flex;gap:12px;">' +
-      '<button onclick="monthlyDate=new Date();monthlyTab=\'settlement\';showView(\'monthly\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
+      '<button onclick="monthlyDate=new Date();monthlyTab=\'settlement\';showView(\'monthly\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;overflow:hidden;">' +
+        '<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--logi);border-radius:18px 0 0 18px;"></div>' +
         _svgMonthly +
         '<div style="text-align:center;">' +
           '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">결산</div>' +
           '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--text-muted);margin-top:3px;font-family:' + _fs + ';">월별 수익</div>' +
         '</div>' +
       '</button>' +
-      '<button onclick="showView(\'backup\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">' +
+      '<button onclick="showView(\'backup\')" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;overflow:hidden;">' +
+        '<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--daegu);border-radius:18px 0 0 18px;"></div>' +
         _svgBackup +
         '<div style="text-align:center;">' +
           '<div style="font-size:clamp(15px,4vw,18px);font-weight:700;color:var(--text-primary);font-family:' + _fs + ';letter-spacing:-0.5px;">백업</div>' +
@@ -1374,7 +1369,7 @@ function renderJournal(c) {
   });
 
   var _area = document.getElementById('journalSwipeArea');
-  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+  var _lpTimer = null;
   if (_area) {
     _area.addEventListener('touchstart', function(e) {
       if (e.touches.length > 1) return;
@@ -1390,7 +1385,6 @@ function renderJournal(c) {
     }, { passive: true });
     _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
-    _area.addEventListener('contextmenu', function(e) { e.preventDefault(); }, { passive: false });
   }
 
   var oldBar = document.getElementById('selectModeBar');
