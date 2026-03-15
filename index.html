@@ -946,6 +946,12 @@ function openSettings() {
 }
 
 function showView(v, skipHistory) {
+  if (v !== 'journal' && _selectMode) {
+    _selectMode = false; _selectedIds = [];
+    if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+    var _bar = document.getElementById('selectModeBar');
+    if (_bar) _bar.remove();
+  }
   currentView = v;
 
   // Android 뒤로가기용 history 스택 관리
@@ -1110,7 +1116,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.15';
+var APP_VERSION = 'v2.3.16';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
