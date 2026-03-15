@@ -1117,7 +1117,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.20';
+var APP_VERSION = 'v2.3.21';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2065,6 +2065,8 @@ function toggleOrderSelect(id) {
 function exitSelectMode() {
   _selectMode = false;
   _selectedIds = [];
+  _deleteConfirmPending = false;
+  if (_deleteConfirmTimer) { clearTimeout(_deleteConfirmTimer); _deleteConfirmTimer = null; }
   var bar = document.getElementById('selectModeBar');
   if (bar) bar.remove();
   render();
@@ -2083,9 +2085,35 @@ async function applyBulkPlatform(pid) {
   showToast(_selectedIds.length + '개 플랫폼이 변경되었습니다');
   exitSelectMode();
 }
+var _deleteConfirmPending = false;
+var _deleteConfirmTimer = null;
 async function bulkDeleteOrders() {
   var cnt = _selectedIds.length;
   if (!cnt) return;
+  if (!_deleteConfirmPending) {
+    _deleteConfirmPending = true;
+    // 삭제 버튼 텍스트를 빨간색 확인 버튼으로 교체
+    var btn = document.querySelector('#selectModeBar button[onclick="bulkDeleteOrders()"]');
+    if (btn) {
+      btn.textContent = '⚠️ 확인 삭제';
+      btn.style.background = 'var(--expense)';
+      btn.style.color = '#fff';
+      btn.style.border = 'none';
+    }
+    _deleteConfirmTimer = setTimeout(function() {
+      _deleteConfirmPending = false;
+      var btn2 = document.querySelector('#selectModeBar button[onclick="bulkDeleteOrders()"]');
+      if (btn2) {
+        btn2.textContent = '삭제';
+        btn2.style.background = 'var(--expense-dim)';
+        btn2.style.color = 'var(--expense)';
+        btn2.style.border = '1px solid rgba(239,68,68,0.3)';
+      }
+    }, 3000);
+    return;
+  }
+  clearTimeout(_deleteConfirmTimer);
+  _deleteConfirmPending = false;
   var ids = _selectedIds.slice();
   for (var i = 0; i < ids.length; i++) {
     await dbDelete('orders', ids[i]);
