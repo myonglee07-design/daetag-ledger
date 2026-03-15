@@ -949,8 +949,6 @@ function openSettings() {
 function showView(v, skipHistory) {
   if (v !== 'journal' && _selectMode) {
     _selectMode = false; _selectedIds = [];
-    _deleteConfirmPending = false;
-    if (_deleteConfirmTimer) { clearTimeout(_deleteConfirmTimer); _deleteConfirmTimer = null; }
     if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
     var _bar = document.getElementById('selectModeBar');
     if (_bar) _bar.remove();
@@ -1119,7 +1117,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.18';
+var APP_VERSION = 'v2.3.19';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2054,6 +2052,7 @@ function changePlatformInEdit() {
 function enterSelectMode(id) {
   _selectMode = true;
   _selectedIds = [id];
+  history.pushState({ selectMode: true }, ''); // 뒤로가기 소모용 더미
   render();
 }
 function toggleOrderSelect(id) {
@@ -2869,10 +2868,15 @@ async function resetAllData() {
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
-  // [0] 선택 모드 중이면 체크 해제만 하고 뷰 이동 안 함
+  // [0] 선택 모드 더미 상태 → 체크 해제만, 뷰 이동 안 함
+  if (e.state && e.state.selectMode) {
+    if (_selectMode) exitSelectMode();
+    return;
+  }
+  // 선택 모드 중인데 다른 경로로 popstate 발생 시도 해제
   if (_selectMode) {
     exitSelectMode();
-    history.pushState({ view: 'journal' }, ''); // 스택 복원
+    history.pushState({ view: 'journal' }, '');
     return;
   }
 
@@ -2886,14 +2890,11 @@ window.addEventListener('popstate', function(e) {
   // [2] 뷰 전환 로직
   const state = e.state;
   if (!state || state.view === 'main') {
-    // 메인화면에서 뒤로가기 → 앱 종료 (브라우저가 처리)
     if (currentView !== 'main') {
       showView('main', true);
       history.replaceState({ view: 'main' }, '');
     }
-    // currentView가 이미 main이면 브라우저 기본 동작(앱 종료)
   } else {
-    // journal → home, 기타 → main
     if (state.view === 'journal') {
       homeMonth = new Date(journalDate.getFullYear(), journalDate.getMonth(), 1);
       showView('home', true);
