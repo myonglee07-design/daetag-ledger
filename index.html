@@ -188,6 +188,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .order-item {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   margin: 6px 16px; padding: 14px; cursor: pointer; position: relative; overflow: hidden;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .order-item:active { background: #282828; }
 .order-item::before { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 100%; }
@@ -1118,7 +1119,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.17';
+var APP_VERSION = 'v2.3.18';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -1393,6 +1394,7 @@ function renderJournal(c) {
     }, { passive: true });
     _area.addEventListener('touchend', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
     _area.addEventListener('touchmove', function() { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } }, { passive: true });
+    _area.addEventListener('contextmenu', function(e) { e.preventDefault(); }, { passive: false });
   }
 
   var oldBar = document.getElementById('selectModeBar');
@@ -2064,8 +2066,6 @@ function toggleOrderSelect(id) {
 function exitSelectMode() {
   _selectMode = false;
   _selectedIds = [];
-  _deleteConfirmPending = false;
-  if (_deleteConfirmTimer) { clearTimeout(_deleteConfirmTimer); _deleteConfirmTimer = null; }
   var bar = document.getElementById('selectModeBar');
   if (bar) bar.remove();
   render();
@@ -2084,22 +2084,9 @@ async function applyBulkPlatform(pid) {
   showToast(_selectedIds.length + '개 플랫폼이 변경되었습니다');
   exitSelectMode();
 }
-var _deleteConfirmPending = false;
-var _deleteConfirmTimer = null;
 async function bulkDeleteOrders() {
   var cnt = _selectedIds.length;
   if (!cnt) return;
-  if (!_deleteConfirmPending) {
-    _deleteConfirmPending = true;
-    showToast('⚠️ ' + cnt + '개 삭제합니다. 한 번 더 누르면 삭제됩니다.', 3500);
-    _deleteConfirmTimer = setTimeout(function() {
-      _deleteConfirmPending = false;
-    }, 3500);
-    return;
-  }
-  // 2번째 탭 - 실제 삭제
-  clearTimeout(_deleteConfirmTimer);
-  _deleteConfirmPending = false;
   var ids = _selectedIds.slice();
   for (var i = 0; i < ids.length; i++) {
     await dbDelete('orders', ids[i]);
@@ -2882,6 +2869,13 @@ async function resetAllData() {
 // ===================== 초기화 =====================
 // Android 뒤로가기 핸들러
 window.addEventListener('popstate', function(e) {
+  // [0] 선택 모드 중이면 체크 해제만 하고 뷰 이동 안 함
+  if (_selectMode) {
+    exitSelectMode();
+    history.pushState({ view: 'journal' }, ''); // 스택 복원
+    return;
+  }
+
   // [1] 열린 바텀시트 있으면 닫기
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
@@ -2983,6 +2977,11 @@ init();
 // 안드로이드 하드웨어 뒤로가기 버튼 처리 (Capacitor APK 전용)
 document.addEventListener('backbutton', function(e) {
   e.preventDefault();
+  // 선택 모드 중이면 체크 해제만
+  if (_selectMode) {
+    exitSelectMode();
+    return;
+  }
   var openSheetEl = document.querySelector('.bottom-sheet.show');
   if (openSheetEl) {
     closeSheet();
