@@ -948,6 +948,8 @@ function openSettings() {
 function showView(v, skipHistory) {
   if (v !== 'journal' && _selectMode) {
     _selectMode = false; _selectedIds = [];
+    _deleteConfirmPending = false;
+    if (_deleteConfirmTimer) { clearTimeout(_deleteConfirmTimer); _deleteConfirmTimer = null; }
     if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
     var _bar = document.getElementById('selectModeBar');
     if (_bar) _bar.remove();
@@ -1116,7 +1118,7 @@ function render() {
 
 // --- 메인 ---
 // --- 메인 화면 ---
-var APP_VERSION = 'v2.3.16';
+var APP_VERSION = 'v2.3.17';
 function renderMain(c) {
   const hv = document.getElementById('headerVersion');
   if (hv) hv.textContent = APP_VERSION;
@@ -2062,6 +2064,8 @@ function toggleOrderSelect(id) {
 function exitSelectMode() {
   _selectMode = false;
   _selectedIds = [];
+  _deleteConfirmPending = false;
+  if (_deleteConfirmTimer) { clearTimeout(_deleteConfirmTimer); _deleteConfirmTimer = null; }
   var bar = document.getElementById('selectModeBar');
   if (bar) bar.remove();
   render();
@@ -2080,9 +2084,22 @@ async function applyBulkPlatform(pid) {
   showToast(_selectedIds.length + '개 플랫폼이 변경되었습니다');
   exitSelectMode();
 }
+var _deleteConfirmPending = false;
+var _deleteConfirmTimer = null;
 async function bulkDeleteOrders() {
   var cnt = _selectedIds.length;
   if (!cnt) return;
+  if (!_deleteConfirmPending) {
+    _deleteConfirmPending = true;
+    showToast('⚠️ ' + cnt + '개 삭제합니다. 한 번 더 누르면 삭제됩니다.', 3500);
+    _deleteConfirmTimer = setTimeout(function() {
+      _deleteConfirmPending = false;
+    }, 3500);
+    return;
+  }
+  // 2번째 탭 - 실제 삭제
+  clearTimeout(_deleteConfirmTimer);
+  _deleteConfirmPending = false;
   var ids = _selectedIds.slice();
   for (var i = 0; i < ids.length; i++) {
     await dbDelete('orders', ids[i]);
